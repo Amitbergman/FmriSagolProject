@@ -1,7 +1,7 @@
 import os
 import re
 from collections import defaultdict
-from typing import List
+from typing import List, Optional
 
 import nibabel as nib
 import numpy as np
@@ -23,6 +23,7 @@ class ExperimentData:
     subjects_data: List[SubjectExperimentData] = attrib()
     # (x, y, z)
     shape: tuple = attrib()
+    roi_paths: Optional[List[str]] = attrib(default=None)
 
 
 def convert_nifty_to_image_array(path: str) -> np.array:
