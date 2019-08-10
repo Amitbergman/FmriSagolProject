@@ -26,6 +26,19 @@ class ExperimentData:
     roi_paths: Optional[List[str]] = attrib(default=None)
 
 
+@attrs
+class FlattenedExperimentData:
+    subjects_data: List[SubjectExperimentData] = attrib()
+    # {0: 1762, 1: 1763, 2: 1764 ..., 25: 16584}
+    flattened_vector_index_to_voxel: dict = attrib()
+    # (x, y, z)
+    shape: tuple = attrib()
+
+    @property
+    def available_features(self):
+        return sorted(self.subjects_data[0].features_data.keys())
+
+
 def convert_nifty_to_image_array(path: str) -> np.array:
     data = nib.load(path).get_fdata()
     return np.array(np.nan_to_num(data))

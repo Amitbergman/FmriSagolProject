@@ -1,5 +1,9 @@
-from sagol.load_data import ExperimentData
+import numpy as np
+
+from sklearn.svm import SVR
 
 
-def train_svr(experiment_data: ExperimentData):
-    return
+def train_svr(x_train: np.ndarray, y_train: np.ndarray, **kwargs) -> SVR:
+    mdl = SVR(**kwargs)
+    mdl.fit(x_train, y_train)
+    return mdl

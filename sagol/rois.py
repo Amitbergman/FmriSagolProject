@@ -5,10 +5,9 @@ from pathlib import Path
 from typing import List, Union, Optional
 
 import numpy as np
-from attr import attrs, attrib
 
 from sagol import config
-from sagol.load_data import ExperimentData, convert_nifty_to_image_array, SubjectExperimentData
+from sagol.load_data import ExperimentData, convert_nifty_to_image_array, FlattenedExperimentData
 
 # Flattened
 ROIS_TO_VOXELS = defaultdict(list)
@@ -46,13 +45,6 @@ def _apply_roi_mask_on_flattened_data(flattened_data: np.ndarray, voxels: List[i
     return np.array(masked_data)
 
 
-@attrs
-class FlattenedExperimentData:
-    subjects_data: List[SubjectExperimentData] = attrib()
-    # {0: 1762, 1: 1763, 2: 1764 ..., 25: 16584}
-    flattened_vector_index_to_voxel: dict = attrib()
-
-
 def _create_vector_index_to_model_mapping(roi_paths: Optional[str]):
     vector_index_to_voxel = {}
     if roi_paths:
@@ -72,9 +64,10 @@ def apply_roi_masks(experiment_data: ExperimentData, roi_paths: Optional[List[st
     subjects_data = copy.deepcopy(experiment_data.subjects_data)
     for subject_data in subjects_data:
         for task_name, fmri_data in subject_data.tasks_data.items():
-            subject_data.tasks_data[task_name] = _apply_roi_mask_on_flattened_data(subject_data.tasks_data[task_name].flatten(),
-                                                                                   voxels=relevant_voxels)
+            subject_data.tasks_data[task_name] = _apply_roi_mask_on_flattened_data(
+                subject_data.tasks_data[task_name].flatten(),
+                voxels=relevant_voxels)
 
     return FlattenedExperimentData(subjects_data=subjects_data,
-                                   flattened_vector_index_to_voxel=flattened_vector_index_to_voxel)
-
+                                   flattened_vector_index_to_voxel=flattened_vector_index_to_voxel,
+                                   shape=experiment_data.shape)
