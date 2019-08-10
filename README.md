@@ -8,7 +8,10 @@ conda activate sagol
 
 2. Install dependencies:
 
-conda install -y pandas scipy numpy scikit-learn nilearn seaborn matplotlib 
+```
+python setup.py devlelop
+pip install -r requirements.txtr
+```
 
 3. Create jupyter kernel (recommended):
 ```
