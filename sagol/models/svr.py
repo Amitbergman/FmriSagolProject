@@ -15,7 +15,7 @@ def train_svr(x_train: np.ndarray, y_train: np.ndarray, **kwargs) -> SVR:
 def run_svr_grid_search(data):
     # TODO: get parameters for the grid search, the ones here are copied from:
     #https://scikit-learn.org/stable/auto_examples/plot_kernel_ridge_regression.html#sphx-glr-auto-examples-plot-kernel-ridge-regression-py
-
+    #TODO: understand how the gridSearch uses test set (currently it does not, I guess it does k fold cross validation)
     x_train, x_test, y_train, y_test = generate_X_and_Y_from_data_and_feature(data, 'FPES')
     print('number of data points in train set is ', len(x_train))
     print('number of features is ', len(x_train[0]))
@@ -42,4 +42,3 @@ def generate_X_and_Y_from_data_and_feature(data, feature):
             X.append(task)
             Y.append(subject_y)
     return train_test_split(X, Y)
-    generate_X_and_Y_from_data_and_feature
