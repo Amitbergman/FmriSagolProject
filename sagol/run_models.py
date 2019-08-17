@@ -85,3 +85,16 @@ def train_model(x_train: np.ndarray, y_train: np.ndarray, model_name: str, **kwa
         return train_svr(x_train, y_train, **kwargs)
     else:
         raise NotImplementedError(f'Model: {model_name} is not supported.')
+
+#exapmle: data = create_subject_experiment_data
+#and then: X,Y = generate_X_and_Y_from_data_and_feature(data, 'FPES')
+# it takes all the images in the data and makes X of them and the Y is the correspondind label based on the feature
+def generate_X_and_Y_from_data_and_feature(data, feature):
+    X = []
+    Y = []
+    for i in range (len(data.subjects_data)):
+        subject_y = data.subjects_data[i].features_data[feature]
+        for task in data.subjects_data[i].tasks_data.values():
+            X.append(task)
+            Y.append(subject_y)
+    return X,Y
