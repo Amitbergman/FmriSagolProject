@@ -28,36 +28,39 @@ class Models:
         raise NotImplementedError()
 
 
-def generate_samples_for_model(experiment_data: FlattenedExperimentData, task_name: str, ylabel: str):
+def generate_samples_for_model(experiment_data: FlattenedExperimentData, task_name: str, constrast_name: str,
+                               ylabel: str):
     samples = [{
-        'x': subject_data.tasks_data[task_name],
+        'x': subject_data.tasks_data[task_name][constrast_name],
         'y': subject_data.features_data[ylabel]
     } for subject_data in experiment_data.subjects_data if task_name in subject_data.tasks_data]
     X = [sample['x'] for sample in samples]
     Y = [sample['y'] for sample in samples]
-    return train_test_split(X, Y)
+    return X, Y
 
 
-def get_or_create_models(experiment_data: ExperimentData, task_name: str, ylabel: str,
+def get_or_create_models(experiment_data: ExperimentData, task_name: str, contrast_name: str, ylabel: str,
                          roi_paths: Optional[List[str]], model_params: Optional[dict] = None) -> Models:
     model_params = model_params or {}
 
     masked_experiment_data = apply_roi_masks(experiment_data, roi_paths)
 
-    pre_computed_models = get_pre_computed_models(ylabel, roi_paths, experiment_data.shape)
-    return pre_computed_models or generate_models(masked_experiment_data, task_name, ylabel, roi_paths, model_params)
+    pre_computed_models = get_pre_computed_models()
+    return pre_computed_models or generate_models(masked_experiment_data, task_name, contrast_name, ylabel, roi_paths,
+                                                  model_params)
 
 
-def get_pre_computed_models(ylabel, rois, shape) -> Optional[Models]:
+def get_pre_computed_models() -> Optional[Models]:
     return
 
 
-def generate_models(experiment_data_roi_masked: FlattenedExperimentData, task_name: str, ylabel: str,
-                    roi_paths: Optional[List[str]], model_params: Optional[dict] = None) -> Models:
+def generate_models(experiment_data_roi_masked: FlattenedExperimentData, task_name: str, constrast_name: str,
+                    ylabel: str, roi_paths: Optional[List[str]], model_params: Optional[dict] = None) -> Models:
     model_params = model_params or {}
     models = {}
 
-    x_train, x_test, y_train, y_test = generate_samples_for_model(experiment_data_roi_masked, task_name, ylabel)
+    X, Y = generate_samples_for_model(experiment_data_roi_masked, task_name, constrast_name, ylabel)
+    x_train, x_test, y_train, y_test = train_test_split(X, Y)
 
     for model_name in AVAILABLE_MODELS:
         models[model_name] = train_model(x_train, y_train, model_name=model_name,
@@ -85,16 +88,3 @@ def train_model(x_train: np.ndarray, y_train: np.ndarray, model_name: str, **kwa
         return train_svr(x_train, y_train, **kwargs)
     else:
         raise NotImplementedError(f'Model: {model_name} is not supported.')
-
-#exapmle: data = create_subject_experiment_data
-#and then: X,Y = generate_X_and_Y_from_data_and_feature(data, 'FPES')
-# it takes all the images in the data and makes X of them and the Y is the correspondind label based on the feature
-def generate_X_and_Y_from_data_and_feature(data, feature):
-    X = []
-    Y = []
-    for i in range (len(data.subjects_data)):
-        subject_y = data.subjects_data[i].features_data[feature]
-        for task in data.subjects_data[i].tasks_data.values():
-            X.append(task)
-            Y.append(subject_y)
-    return X,Y

@@ -23,7 +23,13 @@ class ExperimentData:
     subjects_data: List[SubjectExperimentData] = attrib()
     # (x, y, z)
     shape: tuple = attrib()
+    tasks_metadata: dict = attrib()
     roi_paths: Optional[List[str]] = attrib(default=None)
+
+    @property
+    def available_features(self):
+        return sorted(self.subjects_data[0].features_data.keys())
+
 
 
 @attrs
@@ -33,10 +39,6 @@ class FlattenedExperimentData:
     flattened_vector_index_to_voxel: dict = attrib()
     # (x, y, z)
     shape: tuple = attrib()
-
-    @property
-    def available_features(self):
-        return sorted(self.subjects_data[0].features_data.keys())
 
 
 def convert_nifty_to_image_array(path: str) -> np.array:
@@ -65,6 +67,7 @@ def create_subject_experiment_data(excel_paths: List[str], nifty_dirs: List[str]
     assert nifty_dirs
 
     tasks_data = defaultdict(lambda: defaultdict(dict))
+    tasks_metadata = defaultdict(list)
     experiment_data = []
     dfs = []
 
@@ -88,8 +91,9 @@ def create_subject_experiment_data(excel_paths: List[str], nifty_dirs: List[str]
         task_name = os.path.basename(nifty_dir)
         print(f'Loading data for task: {task_name}')
         for contrast_name in filter(lambda p: os.path.isdir(os.path.join(nifty_dir, p)), os.listdir(nifty_dir)):
-            print(f'Loading data for contrast: {contrast_name}')
             contrast_folder = os.path.join(nifty_dir, contrast_name)
+            if not contrast_folder.startswith('.'):
+                tasks_metadata[task_name].append(contrast_name)
             for fname in sorted(filter(lambda f: f.endswith('.nii'), os.listdir(contrast_folder))):
                 pth = os.path.join(contrast_folder, fname)
                 subject_num = int(SUBJECT_NAME_REGEX.findall(os.path.basename(pth))[0])
@@ -100,7 +104,7 @@ def create_subject_experiment_data(excel_paths: List[str], nifty_dirs: List[str]
         features_data.pop('Sub')
         experiment_data.append(SubjectExperimentData(
             subject_id=int(subject),
-            tasks_data=tasks_data[subject],
+            tasks_data=dict(tasks_data[subject]),
             features_data=features_data
 
         ))
@@ -110,5 +114,4 @@ def create_subject_experiment_data(excel_paths: List[str], nifty_dirs: List[str]
     example_tasks_data = example_subject_data[list(example_subject_data.keys())[0]]
     shape = example_tasks_data[list(example_tasks_data.keys())[0]].shape
 
-    return ExperimentData(subjects_data=experiment_data, shape=shape)
-
+    return ExperimentData(subjects_data=experiment_data, tasks_metadata=dict(tasks_metadata), shape=shape)
