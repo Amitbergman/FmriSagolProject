@@ -47,6 +47,13 @@ def get_or_create_models(experiment_data: ExperimentData, task_name: str, ylabel
     pre_computed_models = get_pre_computed_models(ylabel, roi_paths, experiment_data.shape)
     return pre_computed_models or generate_models(masked_experiment_data, task_name, ylabel, roi_paths, model_params)
 
+def get_or_create_models_for_all_tasks_together(experiment_data: ExperimentData, ylabel: str,
+                         roi_paths: Optional[List[str]], model_params: Optional[dict] = None) -> Models:
+    model_params = model_params or {}
+
+    masked_experiment_data = apply_roi_masks(experiment_data, roi_paths)
+
+    return generate_models(masked_experiment_data,"", ylabel, roi_paths, model_params)
 
 def get_pre_computed_models(ylabel, rois, shape) -> Optional[Models]:
     return
@@ -56,8 +63,10 @@ def generate_models(experiment_data_roi_masked: FlattenedExperimentData, task_na
                     roi_paths: Optional[List[str]], model_params: Optional[dict] = None) -> Models:
     model_params = model_params or {}
     models = {}
-
-    x_train, x_test, y_train, y_test = generate_samples_for_model(experiment_data_roi_masked, task_name, ylabel)
+    if (task_name!=""):
+        x_train, x_test, y_train, y_test = generate_samples_for_model(experiment_data_roi_masked, task_name, ylabel)
+    else:
+        x_train, x_test, y_train, y_test = generate_X_and_Y_from_data_and_feature(experiment_data_roi_masked, ylabel)
 
     for model_name in AVAILABLE_MODELS:
         models[model_name] = train_model(x_train, y_train, model_name=model_name,
@@ -97,4 +106,4 @@ def generate_X_and_Y_from_data_and_feature(data, feature):
         for task in data.subjects_data[i].tasks_data.values():
             X.append(task)
             Y.append(subject_y)
-    return X,Y
+    return train_test_split(X, Y)
