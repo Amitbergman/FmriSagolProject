@@ -62,11 +62,13 @@ def apply_roi_masks(experiment_data: ExperimentData, roi_paths: Optional[List[st
     relevant_voxels = sorted(flattened_vector_index_to_voxel.values())
 
     subjects_data = copy.deepcopy(experiment_data.subjects_data)
+
+    print(f'Applying ROIs.')
     for subject_data in subjects_data:
-        for task_name, fmri_data in subject_data.tasks_data.items():
-            subject_data.tasks_data[task_name] = _apply_roi_mask_on_flattened_data(
-                subject_data.tasks_data[task_name].flatten(),
-                voxels=relevant_voxels)
+        for task_name, task_data in subject_data.tasks_data.items():
+            for contrast_name, fmri_data in task_data.items():
+                subject_data.tasks_data[task_name][contrast_name] = _apply_roi_mask_on_flattened_data(
+                    fmri_data.flatten(), voxels=relevant_voxels)
 
     return FlattenedExperimentData(subjects_data=subjects_data,
                                    flattened_vector_index_to_voxel=flattened_vector_index_to_voxel,
