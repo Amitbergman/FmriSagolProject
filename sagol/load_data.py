@@ -59,7 +59,6 @@ def merge_subject_dfs(dfs: List[pd.DataFrame], column_to_merge_on='Sub') -> pd.D
 
     return pd.DataFrame(data=data.values())
 
-
 def create_subject_experiment_data(excel_paths: List[str], nifty_tasks) -> ExperimentData:
     tasks_data = defaultdict(dict)
     experiment_data = []
@@ -81,11 +80,16 @@ def create_subject_experiment_data(excel_paths: List[str], nifty_tasks) -> Exper
     subjects = sorted(list(features_df['Sub']))
 
     # Extract fMRI data
-    for nifty_dir, task_name in nifty_tasks:
-        for fname in sorted(filter(lambda f: f.endswith('.nii'), os.listdir(nifty_dir))):
-            pth = os.path.join(nifty_dir, fname)
-            subject_num = int(SUBJECT_NAME_REGEX.findall(os.path.basename(pth))[0])
-            tasks_data[subject_num][task_name] = convert_nifty_to_image_array(pth)
+    for folder_of_current_task in nifty_tasks:
+        print("gathering data from folder", folder_of_current_task)
+        for contrast_folder in os.listdir(folder_of_current_task):
+            constrast_path = os.path.join(folder_of_current_task,contrast_folder)
+            if os.path.isdir(constrast_path):
+
+                for fname in sorted(filter(lambda f: f.endswith('.nii'), os.listdir(constrast_path))):
+                    pth = os.path.join(constrast_path, fname)
+                    subject_num = int(SUBJECT_NAME_REGEX.findall(os.path.basename(pth))[0])
+                    tasks_data[subject_num][contrast_folder] = convert_nifty_to_image_array(pth)
 
     for subject in subjects:
         features_data = features_df[features_df.Sub == subject].to_dict(orient='records')[0]
