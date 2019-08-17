@@ -62,7 +62,7 @@ def generate_models(experiment_data_roi_masked: FlattenedExperimentData, task_na
     for model_name in AVAILABLE_MODELS:
         models[model_name] = train_model(x_train, y_train, model_name=model_name,
                                          **model_params.get(model_name, {}))
-        print(f'Trained {model_name} model, score on test data: {models[model_name].score(x_train, y_train)}.')
+        print(f'Trained {model_name} model, score on train data: {models[model_name].score(x_train, y_train)}.')
 
     models = Models(ylabel=ylabel, roi_paths=roi_paths,
                     shape=experiment_data_roi_masked.shape, models=models)
