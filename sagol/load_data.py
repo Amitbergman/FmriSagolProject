@@ -98,7 +98,8 @@ def create_subject_experiment_data(excel_paths: List[str], nifty_tasks) -> Exper
         ))
 
     # Assuming all scans were done using the same scanning option and have the same shape
-    example_tasks_data = tasks_data[subjects[0]]
-    shape = example_tasks_data[list(example_tasks_data.keys())[0]].shape
+    first_subject = list(tasks_data.keys())[0]
+    example_tasks_data = tasks_data[first_subject]
 
+    shape = example_tasks_data[list(example_tasks_data.keys())[0]].shape
     return ExperimentData(subjects_data=experiment_data, shape=shape)
