@@ -47,23 +47,14 @@ def get_or_create_models(experiment_data: ExperimentData, task_name: str, ylabel
     pre_computed_models = get_pre_computed_models(ylabel, roi_paths, experiment_data.shape)
     return pre_computed_models or generate_models(masked_experiment_data, task_name, ylabel, roi_paths, model_params)
 
-def get_or_create_models_for_all_tasks_together(experiment_data: ExperimentData, ylabel: str,
-                         roi_paths: Optional[List[str]], model_params: Optional[dict] = None) -> Models:
-    model_params = model_params or {}
-
-    masked_experiment_data = apply_roi_masks(experiment_data, roi_paths)
-
-    return generate_models(masked_experiment_data,"", ylabel, roi_paths, model_params)
-
 def get_pre_computed_models(ylabel, rois, shape) -> Optional[Models]:
     return
-
 
 def generate_models(experiment_data_roi_masked: FlattenedExperimentData, task_name: str, ylabel: str,
                     roi_paths: Optional[List[str]], model_params: Optional[dict] = None) -> Models:
     model_params = model_params or {}
     models = {}
-    if (task_name!=""):
+    if (task_name!= None):
         x_train, x_test, y_train, y_test = generate_samples_for_model(experiment_data_roi_masked, task_name, ylabel)
     else:
         x_train, x_test, y_train, y_test = generate_X_and_Y_from_data_and_feature(experiment_data_roi_masked, ylabel)
@@ -101,9 +92,9 @@ def train_model(x_train: np.ndarray, y_train: np.ndarray, model_name: str, **kwa
 def generate_X_and_Y_from_data_and_feature(data, feature):
     X = []
     Y = []
-    for i in range (len(data.subjects_data)):
-        subject_y = data.subjects_data[i].features_data[feature]
-        for task in data.subjects_data[i].tasks_data.values():
+    for subject_data in data.subjects_data:
+        subject_y = subject_data.features_data[feature]
+        for task in subject_data.tasks_data.values():
             X.append(task)
             Y.append(subject_y)
     return train_test_split(X, Y)

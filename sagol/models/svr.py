@@ -15,14 +15,13 @@ def train_svr(x_train: np.ndarray, y_train: np.ndarray, **kwargs) -> SVR:
 def run_svr_grid_search(data):
     # TODO: get parameters for the grid search, the ones here are copied from:
     #https://scikit-learn.org/stable/auto_examples/plot_kernel_ridge_regression.html#sphx-glr-auto-examples-plot-kernel-ridge-regression-py
-    #TODO: understand how the gridSearch uses test set (currently it does not, I guess it does k fold cross validation)
-    x_train, x_test, y_train, y_test = generate_X_and_Y_from_data_and_feature(data, 'FPES')
-    print('number of data points in train set is ', len(x_train))
-    print('number of features is ', len(x_train[0]))
+    X,Y = generate_X_and_Y_from_data_and_feature(data, 'FPES')
+    print('number of data points in train set is ', len(X))
+    print('number of features is ', len(X[0]))
     svr = GridSearchCV(SVR(kernel='rbf', gamma=0.1), cv=5,
                     param_grid={"C": [1e0, 1e1, 1e2, 1e3],
                                 "gamma": np.logspace(-2, 2, 5)})
-    svr.fit(x_train, y_train)
+    svr.fit(X, Y)
     # TODO: understand the meaning of the score when we talk about regression and not classification
     print("best estimator is",svr.best_estimator_)
     print("the best score is", svr.best_score_)
@@ -41,4 +40,4 @@ def generate_X_and_Y_from_data_and_feature(data, feature):
         for task in data.subjects_data[i].tasks_data.values():
             X.append(task)
             Y.append(subject_y)
-    return train_test_split(X, Y)
+    return X, Y
