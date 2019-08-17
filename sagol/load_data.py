@@ -60,8 +60,11 @@ def merge_subject_dfs(dfs: List[pd.DataFrame], column_to_merge_on='Sub') -> pd.D
     return pd.DataFrame(data=data.values())
 
 
-def create_subject_experiment_data(excel_paths: List[str], nifty_tasks) -> ExperimentData:
-    tasks_data = defaultdict(dict)
+def create_subject_experiment_data(excel_paths: List[str], nifty_dirs: List[str]) -> ExperimentData:
+    assert excel_paths
+    assert nifty_dirs
+
+    tasks_data = defaultdict(lambda: defaultdict(dict))
     experiment_data = []
     dfs = []
 
@@ -81,11 +84,16 @@ def create_subject_experiment_data(excel_paths: List[str], nifty_tasks) -> Exper
     subjects = sorted(list(features_df['Sub']))
 
     # Extract fMRI data
-    for nifty_dir, task_name in nifty_tasks:
-        for fname in sorted(filter(lambda f: f.endswith('.nii'), os.listdir(nifty_dir))):
-            pth = os.path.join(nifty_dir, fname)
-            subject_num = int(SUBJECT_NAME_REGEX.findall(os.path.basename(pth))[0])
-            tasks_data[subject_num][task_name] = convert_nifty_to_image_array(pth)
+    for nifty_dir in nifty_dirs:
+        task_name = os.path.basename(nifty_dir)
+        print(f'Loading data for task: {task_name}')
+        for contrast_name in filter(lambda p: os.path.isdir(os.path.join(nifty_dir, p)), os.listdir(nifty_dir)):
+            print(f'Loading data for contrast: {contrast_name}')
+            contrast_folder = os.path.join(nifty_dir, contrast_name)
+            for fname in sorted(filter(lambda f: f.endswith('.nii'), os.listdir(contrast_folder))):
+                pth = os.path.join(contrast_folder, fname)
+                subject_num = int(SUBJECT_NAME_REGEX.findall(os.path.basename(pth))[0])
+                tasks_data[subject_num][task_name][contrast_name] = convert_nifty_to_image_array(pth)
 
     for subject in subjects:
         features_data = features_df[features_df.Sub == subject].to_dict(orient='records')[0]
@@ -98,7 +106,9 @@ def create_subject_experiment_data(excel_paths: List[str], nifty_tasks) -> Exper
         ))
 
     # Assuming all scans were done using the same scanning option and have the same shape
-    example_tasks_data = tasks_data[subjects[0]]
+    example_subject_data = tasks_data[subjects[0]]
+    example_tasks_data = example_subject_data[list(example_subject_data.keys())[0]]
     shape = example_tasks_data[list(example_tasks_data.keys())[0]].shape
 
     return ExperimentData(subjects_data=experiment_data, shape=shape)
+
