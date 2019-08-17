@@ -107,3 +107,4 @@ def generate_X_and_Y_from_data_and_feature(data, feature):
             X.append(task)
             Y.append(subject_y)
     return train_test_split(X, Y)
+    generate_X_and_Y_from_data_and_feature
