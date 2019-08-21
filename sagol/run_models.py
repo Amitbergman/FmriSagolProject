@@ -3,6 +3,7 @@ from typing import List, Optional
 import numpy as np
 from attr import attrs, attrib
 from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import OneHotEncoder
 
 from sagol.load_data import ExperimentData, FlattenedExperimentData
 from sagol.models.svr import train_svr
@@ -26,17 +27,68 @@ class Models:
     @classmethod
     def load(cls, ylabels, rois, shape):
         raise NotImplementedError()
+        
+
+def one_hot_encode_contrasts(X):
+    X = X.reshape(len(X), len(X[0])) # Reshaping to get a matrix like numpy array is necessary for the one hot encoding ahead
+    contrast_data = X[:, -1:] # Getting contrast data only
+    
+    # Binary encoding
+    one_hot_encoder = OneHotEncoder(sparse=False, categories='auto')
+    one_hot_encoded = one_hot_encoder.fit_transform(contrast_data) # Getting the the one hot encoded data
+    
+    # Deleting old contrast int-column and replace it by one-hot-encoded column
+    X = np.delete(X, -1, axis=1)
+    X = np.concatenate((X, one_hot_encoded), axis=1)
+
+    return X
 
 
-def generate_samples_for_model(experiment_data: FlattenedExperimentData, task_name: str, constrast_name: str,
-                               ylabel: str):
-    samples = [{
-        'x': subject_data.tasks_data[task_name][constrast_name],
-        'y': subject_data.features_data[ylabel]
-    } for subject_data in experiment_data.subjects_data if task_name in subject_data.tasks_data]
-    X = [sample['x'] for sample in samples]
-    Y = [sample['y'] for sample in samples]
-    return X, Y
+# Pass None in order to generate samples for all tasks and/or contrasts
+def generate_samples_for_model(experiment_data: FlattenedExperimentData, task_name: List[str], constrast_name: List[str],
+                               ylabel: List[str]):
+    X = []
+    y = []
+    contrast_mapping = {} # In order to restore the contrasts out of the numbers they will be given soon
+    num_of_contrasts_found = 0 # The number of contrasts is not known in advance but it needs to be counted for the mapping
+    
+    # If we want specific tasks and/or contrasts, there better be lookup data structures containing the names of the wanted tasks
+    # and/or contrasts. Otherwise, task_name and/or contrast_name are None
+    if task_name is not None:
+        if len(task_name) == 0:
+            raise RuntimeError("task_name list is empty! If you want all tasks, pass None!")
+        task_names = {name:None for name in task_name}
+        
+    if constrast_name is not None:
+        if len(constrast_name) == 0:
+            raise RuntimeError("constrast_name list is empty! If you want all contrasts, pass None!")
+        constrast_names = {name:None for name in constrast_name}
+        
+    # This loop extracts the wanted tasks, contrasts and labels by iterating over subjects (outer loop), tasks and contrasts
+    # (inner loop)
+    for subject_data in experiment_data.subjects_data:
+        for task_data in subject_data.tasks_data.items():
+            if task_name is None or task_data[0] in task_names:
+                for contrast_data in task_data[1].items():
+                    if constrast_name is None or contrast_data[0] in constrast_names:
+                        task_contrast_name = task_data[0] + '_' + contrast_data[0]
+                        if task_contrast_name not in contrast_mapping:
+                            contrast_mapping[task_contrast_name] = num_of_contrasts_found
+                            num_of_contrasts_found += 1
+                        X.append(np.concatenate((contrast_data[1], [contrast_mapping[task_contrast_name]])))
+                        if len(ylabel) == 0:
+                            raise RuntimeError("ylabel list is empty!")
+                        elif len(ylabel) == 1:
+                            y.append(subject_data.features_data[ylabel[0]])
+                        else:
+                            y.append([subject_data.features_data[label] for label in ylabel])
+                            
+    # Because the numbers of the contrasts are meaningless it is necessary to convert them to one hot codes so they will not be
+    # treated as numerical features
+    X = one_hot_encode_contrasts(np.array(X))
+    
+    # Returning the inverse dictionary to get the contrasts out of their numbers
+    return X, y, {item[1]:item[0] for item in contrast_mapping.items()}
 
 
 def get_or_create_models(experiment_data: ExperimentData, task_name: str, contrast_name: str, ylabel: str,
@@ -54,12 +106,12 @@ def get_pre_computed_models() -> Optional[Models]:
     return
 
 
-def generate_models(experiment_data_roi_masked: FlattenedExperimentData, task_name: str, constrast_name: str,
+def generate_models(experiment_data_roi_masked: FlattenedExperimentData, task_name: List[str], constrast_name: List[str],
                     ylabel: str, roi_paths: Optional[List[str]], model_params: Optional[dict] = None) -> Models:
     model_params = model_params or {}
     models = {}
 
-    X, Y = generate_samples_for_model(experiment_data_roi_masked, task_name, constrast_name, ylabel)
+    X, Y = generate_samples_for_model(experiment_data_roi_masked, task_name, constrast_name, [ylabel])
     x_train, x_test, y_train, y_test = train_test_split(X, Y)
 
     for model_name in AVAILABLE_MODELS:
