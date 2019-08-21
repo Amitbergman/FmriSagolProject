@@ -6,7 +6,7 @@ import numpy as np
 
 class Multiple_Task_Regressor(BaseEstimator, RegressorMixin):  
 
-    def __init__(self, weak_learner=SVR, hyper_params={}, tasks_in_weak_learner=1, first_index_of_task=-1):
+    def __init__(self, weak_learner=SVR, hyper_params={}, tasks_in_weak_learner=1, first_index_of_task=None):
         self.weak_learner = weak_learner # sklearn model class (e.g SVR)
         self.hyper_params = hyper_params # Dictionary of hyper parameters according to the model (can be empty)
         
@@ -17,18 +17,20 @@ class Multiple_Task_Regressor(BaseEstimator, RegressorMixin):
         self.first_index_of_task = first_index_of_task # This is needed in order to get the contrast from the X data
         
         self.weak_learners = None
-
+        
     
     # X here is a list of tuples of the form: (instance's features, instance's contrast). Do not be afraid to change it carefully if
     # necessary (you have to change it in predict method too)
     def fit(self, X, y=None):
+        if self.first_index_of_task is None:
+            raise RuntimeError("You must pass as parameter the first index of task! Look at the constructor of this class!")
         T = [np.where(x[self.first_index_of_task:] == 1)[0][0] for x in X]
         tasks = sorted(set(T)) # The unique tasks
             
         # 'tasks' choose 'tasks_in_weak_learner' combinations of contrasts
         combs = list(combinations(tasks, self.tasks_in_weak_learner))
-        if len(combs) > 100: # To prevent collapsing, fitting more than this number of regressors is not allowed
-            raise RuntimeError("Currently, fitting more than 100 regressors is not allowed!")
+        if len(combs) > 1000: # To prevent collapsing, fitting more than this number of regressors is not allowed
+            raise RuntimeError("Currently, fitting more than 1000 regressors is not allowed!")
         
         # A dict of combination and X and y belong to one of the contrasts
         X_y_new = {comb:([], []) for comb in combs}
@@ -79,7 +81,7 @@ class Multiple_Task_Regressor(BaseEstimator, RegressorMixin):
                 if T[i] in wl[0] and wl[1][1] > 0:
                     pred += wl_preds[wl[0]][i] * wl[1][1]
                     total_scores += wl[1][1]
-            preds[i] = pred / total_scores # Normalizing by the sum of all scores taken into account
+            preds[i] = (pred / total_scores) if total_scores > 0 else 0 # Normalizing by the sum of all scores taken into account
         return preds
 
     
