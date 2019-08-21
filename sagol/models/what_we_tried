@@ -1,0 +1,12 @@
+1.  Model: SVR(C=160, kernel='rbf', gamma=0.000095)
+    Data: all contrasts with Amygdala, NACC, rpgACC and VMPFC as mask.
+    Test score:
+        without centeralization: 0.45572381789473315
+        with centeralization: 0.356789368664021
+
+2.  Model: sagol.models.multiple_task_regressor.Multiple_Task_Regressor(weak_learner=SVR, 
+                                                                   hyper_params={'C':160, 'kernel':'rbf', 'gamma':0.000095}, 
+                                                                   tasks_in_weak_learner=29/30,
+                                                                   first_index_of_task=-31)
+    Data: all contrasts with Amygdala, NACC, rpgACC and VMPFC as mask.
+    Test score: ~0.45115524468163637
