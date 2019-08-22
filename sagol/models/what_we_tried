@@ -12,3 +12,18 @@
     Data: all contrasts with Amygdala, NACC, rpgACC and VMPFC as mask.
     y label: FPES
     Test score: ~0.45115524468163637
+    
+3.  Model: many Ridge (sklearn) models
+    Data: all contrasts with Amygdala, NACC, rpgACC and VMPFC as mask.
+    y label: FPES
+    Test score: bad
+    
+4.  Model: many DecisionTreeRegressor models
+    Data: all contrasts with Amygdala, NACC, rpgACC and VMPFC as mask.
+    y label: FPES
+    Test score: bad
+    
+5.  Model: BaggingRegressor(n_estimators=400)
+    Data: all contrasts with Amygdala, NACC, rpgACC and VMPFC as mask.
+    y label: FPES
+    Test score: 0.45659727418689317
