@@ -46,7 +46,7 @@ def one_hot_encode_contrasts(X):
 
 
 def generate_samples_for_model(experiment_data: FlattenedExperimentData, tasks_and_contrasts: Optional[dict],
-                               ylabels: List[str]):
+                               ylabels: List[str], weights: Optional[List] = None):
     """
     :param ylabels:
     :param tasks_and_contrasts: A dictionary of {<task_name>: [<contrast_name>, <contrast_name2>]}
@@ -54,6 +54,8 @@ def generate_samples_for_model(experiment_data: FlattenedExperimentData, tasks_a
     that specific task.
     """
     assert ylabels
+    tasks_and_contrasts = tasks_and_contrasts or {}
+
     X, Y = [], []
     contrast_hot_encoding_mapping = {}
     current_contrast_index = 0
@@ -89,18 +91,19 @@ def generate_samples_for_model(experiment_data: FlattenedExperimentData, tasks_a
     one_hot_encoding_mapping = {ind: task_contrast_name for task_contrast_name, ind in
                                 contrast_hot_encoding_mapping.items()}
 
-    return X, Y, one_hot_encoding_mapping
+    return X, [np.average(y, weights=weights) for y in Y], one_hot_encoding_mapping
 
 
-def get_or_create_models(experiment_data: ExperimentData, tasks_and_contrasts: dict, ylabels: List[str],
-                         roi_paths: Optional[List[str]], model_params: Optional[dict] = None) -> Models:
+def get_or_create_models(experiment_data: ExperimentData, tasks_and_contrasts: Optional[dict], ylabels: List[str],
+                         roi_paths: Optional[List[str]], ylabel_to_weight: Optional[dict] = None,
+                         model_params: Optional[dict] = None) -> Models:
     model_params = model_params or {}
 
     masked_experiment_data = apply_roi_masks(experiment_data, roi_paths)
 
     pre_computed_models = get_pre_computed_models()
     return pre_computed_models or generate_models(masked_experiment_data, tasks_and_contrasts, ylabels, roi_paths,
-                                                  model_params)
+                                                  ylabel_to_weight=ylabel_to_weight, model_params=model_params)
 
 
 def get_pre_computed_models() -> Optional[Models]:
@@ -108,12 +111,23 @@ def get_pre_computed_models() -> Optional[Models]:
 
 
 def generate_models(experiment_data_roi_masked: FlattenedExperimentData, tasks_and_contrasts: dict,
-                    ylabels: List[str], roi_paths: Optional[List[str]], model_params: Optional[dict] = None) -> Models:
+                    ylabels: List[str], roi_paths: Optional[List[str]], ylabel_to_weight: Optional[dict] = None,
+                    model_params: Optional[dict] = None) -> Models:
     model_params = model_params or {}
     models = {}
 
+    weights = []
+    if ylabel_to_weight:
+        assert len(ylabel_to_weight) == len(ylabels), 'Weights must be provided for all ylabels.'
+        sum_of_weights = sum(ylabel_to_weight.values()) != 1
+        if sum_of_weights:
+            print('Weights were not normalized, normalizing the weights such that the sum is 1.')
+            ylabel_to_weight = {k: v / sum_of_weights for k, v in ylabel_to_weight.items()}
+
+        weights = [ylabel_to_weight[ylabel] for ylabel in ylabels]
+
     X, Y, one_hot_encoding_mapping = generate_samples_for_model(experiment_data_roi_masked, tasks_and_contrasts,
-                                                                ylabels)
+                                                                ylabels, weights=weights)
     x_train, x_test, y_train, y_test = train_test_split(X, Y)
 
     for model_name in AVAILABLE_MODELS:

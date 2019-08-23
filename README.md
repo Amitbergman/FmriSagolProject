@@ -10,7 +10,7 @@ conda activate sagol
 
 ```
 python setup.py devlelop
-pip install -r requirements.txtr
+pip install -r requirements.txt
 ```
 
 * Create jupyter kernel (recommended):

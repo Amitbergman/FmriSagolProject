@@ -63,6 +63,8 @@ def _create_vector_index_to_model_mapping(roi_paths: Optional[str]):
 
 
 def apply_roi_masks(experiment_data: ExperimentData, roi_paths: Optional[List[str]]) -> FlattenedExperimentData:
+    roi_paths = roi_paths or get_available_rois()
+
     global VOXEL_TO_ROIS
     flattened_vector_index_to_rois = {}
 
