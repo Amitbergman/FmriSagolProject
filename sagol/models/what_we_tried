@@ -73,6 +73,9 @@ y label is averaged between SPIN, BFNE, LSAS, FPES.
 
 	c:\users\t-amberm\desktop\fmrisagolproject\rois\rVMPFC_6_50.nii - 0.1258537409699041
 
-
+11. SVR(C=200, cache_size=200, coef0=0.0, degree=3, epsilon=0.1, gamma=0.0001,
+    kernel='rbf', max_iter=-1, shrinking=True, tol=0.001, verbose=False)
+	y label is average between 'SPIN', 'BFNE', 'LSAS', 'FPES'.
+	score on test: 0.5298883578330098
 
 
