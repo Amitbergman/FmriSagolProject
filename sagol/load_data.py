@@ -31,12 +31,12 @@ class ExperimentData:
         return sorted(self.subjects_data[0].features_data.keys())
 
 
-
 @attrs
 class FlattenedExperimentData:
     subjects_data: List[SubjectExperimentData] = attrib()
     # {0: 1762, 1: 1763, 2: 1764 ..., 25: 16584}
     flattened_vector_index_to_voxel: dict = attrib()
+    flattened_vector_index_to_rois: dict = attrib()
     # (x, y, z)
     shape: tuple = attrib()
 

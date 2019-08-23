@@ -11,22 +11,27 @@ from sagol.load_data import ExperimentData, convert_nifty_to_image_array, Flatte
 
 # Flattened
 ROIS_TO_VOXELS = defaultdict(list)
+VOXEL_TO_ROIS = defaultdict(list)
 
 
 def get_available_rois() -> List[str]:
     return [str(path) for path in config.ROIS_DIR.iterdir()]
 
 
-def get_rois_to_voxels_mapping() -> dict:
+def get_rois_and_voxels_mappings() -> (dict, dict):
+    print('Creating ROIs-Voxel mappings.')
     global ROIS_TO_VOXELS
-    if not ROIS_TO_VOXELS:
+    global VOXEL_TO_ROIS
+
+    if not ROIS_TO_VOXELS or not VOXEL_TO_ROIS:
         for roi_path in get_available_rois():
             flattened_mask = get_mask_from_roi(roi_path).flatten()
             for i, val in enumerate(flattened_mask):
                 if val != 0:
                     ROIS_TO_VOXELS[roi_path].append(i)
+                    VOXEL_TO_ROIS[i].append(roi_path)
 
-    return dict(ROIS_TO_VOXELS)
+    return dict(ROIS_TO_VOXELS), dict(VOXEL_TO_ROIS)
 
 
 def get_mask_from_roi(roi_path: Union[Path, str]) -> np.array:
@@ -49,7 +54,7 @@ def _create_vector_index_to_model_mapping(roi_paths: Optional[str]):
     vector_index_to_voxel = {}
     if roi_paths:
         relevant_voxels = set()
-        rois_to_voxels = get_rois_to_voxels_mapping()
+        rois_to_voxels, voxels_to_rois = get_rois_and_voxels_mappings()
         for roi_path in roi_paths:
             relevant_voxels.update(rois_to_voxels[roi_path])
         for i, voxel_index in enumerate(sorted(relevant_voxels)):
@@ -58,7 +63,13 @@ def _create_vector_index_to_model_mapping(roi_paths: Optional[str]):
 
 
 def apply_roi_masks(experiment_data: ExperimentData, roi_paths: Optional[List[str]]) -> FlattenedExperimentData:
+    global VOXEL_TO_ROIS
+    flattened_vector_index_to_rois = {}
+
     flattened_vector_index_to_voxel = _create_vector_index_to_model_mapping(roi_paths)
+    for vector_index, voxel_index in flattened_vector_index_to_voxel.items():
+        flattened_vector_index_to_rois[vector_index] = VOXEL_TO_ROIS.get(voxel_index)
+
     relevant_voxels = sorted(flattened_vector_index_to_voxel.values())
 
     subjects_data = copy.deepcopy(experiment_data.subjects_data)
@@ -72,4 +83,5 @@ def apply_roi_masks(experiment_data: ExperimentData, roi_paths: Optional[List[st
 
     return FlattenedExperimentData(subjects_data=subjects_data,
                                    flattened_vector_index_to_voxel=flattened_vector_index_to_voxel,
+                                   flattened_vector_index_to_rois=flattened_vector_index_to_rois,
                                    shape=experiment_data.shape)
