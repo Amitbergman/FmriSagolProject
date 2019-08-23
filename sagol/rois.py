@@ -68,7 +68,8 @@ def apply_roi_masks(experiment_data: ExperimentData, roi_paths: Optional[List[st
 
     flattened_vector_index_to_voxel = _create_vector_index_to_model_mapping(roi_paths)
     for vector_index, voxel_index in flattened_vector_index_to_voxel.items():
-        flattened_vector_index_to_rois[vector_index] = VOXEL_TO_ROIS.get(voxel_index)
+        flattened_vector_index_to_rois[vector_index] = [roi for roi in VOXEL_TO_ROIS.get(voxel_index, []) if
+                                                        roi in roi_paths]
 
     relevant_voxels = sorted(flattened_vector_index_to_voxel.values())
 
