@@ -27,3 +27,52 @@
     Data: all contrasts with Amygdala, NACC, rpgACC and VMPFC as mask.
     y label: FPES
     Test score: 0.45659727418689317
+
+6. Model: Model: SVR(C=160, kernel='rbf', gamma=0.000095)
+Data: all the contrasts
+Y label is average between "FPES", "BFNE", "SPIN" and "LSAS"
+test score: 0.5581003714881718
+
+7. same as 6 but the y label is average between 'BFNE', 'FPES', 'LSAS', 'SPIN', 'DPSOS_self', 'DPSOS_other', 'SPSRQ_punishment'
+test score: 0.48999857677685843
+
+8. same as 6 and 7 but the y label is weights by this weights:
+{'SPIN': 0.1582647462277092,
+ 'BFNE': 0.1507201646090535,
+ 'LSAS': 0.16666666666666666,
+ 'FPES': 0.14334705075445817,
+ 'DPSOS_self': 0.1337448559670782,
+ 'DPSOS_other': 0.13220164609053497,
+ 'SPSRQ_punishment': 0.11505486968449932}
+
+test score: 0.5437322522449239
+
+9. same as 8 but kernel is linear (takes forever to get results)
+
+10. One ROI at a time, and model = SVR(C=160, kernel='rbf', gamma=0.000095)
+y label is averaged between SPIN, BFNE, LSAS, FPES. 
+	c:\users\t-amberm\desktop\fmrisagolproject\rois\rL_Amyg_Comb.nii - 0.0267630912514496
+	
+	c:\users\t-amberm\desktop\fmrisagolproject\rois\rNAcc_L.nii - 0.012432087584862361
+
+	c:\users\t-amberm\desktop\fmrisagolproject\rois\rNAcc_R.nii - -0.02197791930206905
+
+	c:\users\t-amberm\desktop\fmrisagolproject\rois\rpgACC.nii - 0.12286597310244673
+	c:\users\t-amberm\desktop\fmrisagolproject\rois\rR_Amyg_Comb.nii - 0.06154439072945794
+
+	c:\users\t-amberm\desktop\fmrisagolproject\rois\rVMPFC_1_41.nii - 0.09878826437436383
+
+	c:\users\t-amberm\desktop\fmrisagolproject\rois\rVMPFC_2_42.nii - 0.182384148038096
+
+	c:\users\t-amberm\desktop\fmrisagolproject\rois\rVMPFC_3_47.nii - 0.129266318363635
+
+	c:\users\t-amberm\desktop\fmrisagolproject\rois\rVMPFC_4_48.nii - 0.18113781072011925
+
+	c:\users\t-amberm\desktop\fmrisagolproject\rois\rVMPFC_5_49.nii - 0.2009214398356167
+
+
+	c:\users\t-amberm\desktop\fmrisagolproject\rois\rVMPFC_6_50.nii - 0.1258537409699041
+
+
+
+
