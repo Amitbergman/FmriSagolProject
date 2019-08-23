@@ -58,13 +58,16 @@ def generate_samples_for_model(experiment_data: FlattenedExperimentData, tasks_a
     contrast_hot_encoding_mapping = {}
     current_contrast_index = 0
 
-    task_names = tasks_and_contrasts.keys()
     use_all_tasks = not bool(tasks_and_contrasts)
+    if use_all_tasks:
+        task_names = []
+    else:
+        task_names = tasks_and_contrasts.keys()
 
     for subject_data in experiment_data.subjects_data:
         for task_name, task_data in subject_data.tasks_data.items():
             if use_all_tasks or task_name in task_names:
-                use_all_contrasts = not bool(task_data.keys())
+                use_all_contrasts = not bool(tasks_and_contrasts.get(task_name))
 
                 for contrast_name, fmri_data in task_data.items():
                     if use_all_contrasts or contrast_name in tasks_and_contrasts.get(task_name, []):
