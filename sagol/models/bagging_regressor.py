@@ -12,7 +12,7 @@ def train_bagging_regressor(x_train: np.ndarray, y_train: np.ndarray, **kwargs) 
         return mdl
     else:
         param_grid = {
-            'n_estimators': [5, 10, 20, 50, 100, 250],
+            'n_estimators': [5, 10, 20, 50, 100],
         }
         print(f'n_estimators for `bagging_regressor` not passed, performing grid search. Using param_grid: {param_grid} '
               f'This may take a while...')

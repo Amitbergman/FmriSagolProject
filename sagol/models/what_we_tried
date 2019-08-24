@@ -1,3 +1,11 @@
+provided_ylabel_scoring = {'SPIN': 0.1582647462277092,
+ 'BFNE': 0.1507201646090535,
+ 'LSAS': 0.16666666666666666,
+ 'FPES': 0.14334705075445817,
+ 'DPSOS_self': 0.1337448559670782,
+ 'DPSOS_other': 0.13220164609053497,
+ 'SPSRQ_punishment': 0.11505486968449932}
+
 1.  Model: SVR(C=160, kernel='rbf', gamma=0.000095)
     Data: all contrasts with Amygdala, NACC, rpgACC and VMPFC as mask.
     y label: FPES
@@ -36,14 +44,7 @@ test score: 0.5581003714881718
 7. same as 6 but the y label is average between 'BFNE', 'FPES', 'LSAS', 'SPIN', 'DPSOS_self', 'DPSOS_other', 'SPSRQ_punishment'
 test score: 0.48999857677685843
 
-8. same as 6 and 7 but the y label is weights by this weights:
-{'SPIN': 0.1582647462277092,
- 'BFNE': 0.1507201646090535,
- 'LSAS': 0.16666666666666666,
- 'FPES': 0.14334705075445817,
- 'DPSOS_self': 0.1337448559670782,
- 'DPSOS_other': 0.13220164609053497,
- 'SPSRQ_punishment': 0.11505486968449932}
+8. same as 6 and 7 but the y label by `provided_ylabel_scoring`
 
 test score: 0.5437322522449239
 
@@ -79,3 +80,10 @@ y label is averaged between SPIN, BFNE, LSAS, FPES.
 	score on test: 0.5298883578330098
 
 
+
+5.  Model: BaggingRegressor(n_estimators=50/400)
+    Data: all contrasts with Amygdala, NACC, rpgACC and VMPFC as mask.
+    y label: `provided_ylabel_scoring`
+
+    Test score: 0.5265733966405461  (n_estimators=50)
+    Test score: 0.5348162106073528  (n_estimators=400)
