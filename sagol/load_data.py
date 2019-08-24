@@ -14,7 +14,9 @@ SUBJECT_NAME_REGEX = re.compile('sub-(\d+).*')
 @attrs
 class SubjectExperimentData:
     subject_id: int = attrib()
+    # Subject general data (e.g Age) and scores on questionnaires (e.g FPES).
     features_data: dict = attrib()
+    # fMRI data for each task and contrast.
     tasks_data: dict = attrib()
 
 
@@ -23,6 +25,7 @@ class ExperimentData:
     subjects_data: List[SubjectExperimentData] = attrib()
     # (x, y, z)
     shape: tuple = attrib()
+    # Holds the available contrasts for each task.
     tasks_metadata: dict = attrib()
     roi_paths: Optional[List[str]] = attrib(default=None)
 
@@ -36,6 +39,7 @@ class FlattenedExperimentData:
     subjects_data: List[SubjectExperimentData] = attrib()
     # {0: 1762, 1: 1763, 2: 1764 ..., 25: 16584}
     flattened_vector_index_to_voxel: dict = attrib()
+    # Same as `flattened_vector_index_to_voxel`, but allows tracking back the relevant ROIs.
     flattened_vector_index_to_rois: dict = attrib()
     # (x, y, z)
     shape: tuple = attrib()
@@ -72,7 +76,7 @@ def create_subject_experiment_data(excel_paths: List[str], nifty_dirs: List[str]
     dfs = []
 
     for excel_path in excel_paths:
-        # Read excel file with multiple sheets, merging the data belonging to the same subject
+        # Read excel file with multiple sheets, allows for merging the data belonging to the same subject later.
         if excel_path.endswith('.xlsx') or excel_path.endswith('.xls'):
             xls = pd.ExcelFile(excel_path)
             for sheet in xls.sheet_names:
@@ -83,8 +87,6 @@ def create_subject_experiment_data(excel_paths: List[str], nifty_dirs: List[str]
     features_df = merge_subject_dfs(dfs)
     # Transform NaN/NaT to None
     features_df = features_df.where((pd.notnull(features_df)), None)
-
-    subjects = sorted(list(features_df['Sub']))
 
     # Extract fMRI data
     for nifty_dir in nifty_dirs:
@@ -98,6 +100,8 @@ def create_subject_experiment_data(excel_paths: List[str], nifty_dirs: List[str]
                 pth = os.path.join(contrast_folder, fname)
                 subject_num = int(SUBJECT_NAME_REGEX.findall(os.path.basename(pth))[0])
                 tasks_data[subject_num][task_name][contrast_name] = convert_nifty_to_image_array(pth)
+
+    subjects = sorted(list(features_df['Sub']))
 
     for subject in subjects:
         features_data = features_df[features_df.Sub == subject].to_dict(orient='records')[0]

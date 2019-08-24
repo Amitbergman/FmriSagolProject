@@ -18,7 +18,7 @@ class Models:
     roi_paths: Optional[List[str]] = attrib()
     # (x, y, z)
     shape: tuple = attrib()
-    # {'svr' : <model>, 'cnn': <model>}
+    # {'svr' : <model>, 'multiple_regressor': <model>}
     models: dict = attrib()
 
 
@@ -33,6 +33,9 @@ def generate_samples_for_model(experiment_data: FlattenedExperimentData, tasks_a
 
     tasks_and_contrasts = tasks_and_contrasts or {}
     X, Y = [], []
+
+    # We need to differentiate images of the same brain "cut" belonging to different contrast.
+    # To do so, we use one hot encoding of the task + contrast combination.
     contrast_hot_encoding_mapping = {}
     current_contrast_index = 0
 
@@ -68,7 +71,10 @@ def generate_samples_for_model(experiment_data: FlattenedExperimentData, tasks_a
     one_hot_encoding_mapping = {ind: task_contrast_name for task_contrast_name, ind in
                                 contrast_hot_encoding_mapping.items()}
 
-    return X, [np.average(y, weights=weights) for y in Y], one_hot_encoding_mapping
+    # In case of multiple labels, use a weighted sum.
+    Y = [np.average(y, weights=weights) for y in Y]
+
+    return X, Y, one_hot_encoding_mapping
 
 
 def get_or_create_models(experiment_data: ExperimentData, tasks_and_contrasts: Optional[dict], ylabels: List[str],
