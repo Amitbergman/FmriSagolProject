@@ -82,7 +82,7 @@ def apply_roi_masks(experiment_data: ExperimentData, roi_paths: Optional[List[st
     subjects_data = copy.deepcopy(experiment_data.subjects_data)
 
     logger.info(f'Applying ROIs.')
-    for subject_data in subjects_data:
+    for subject_data in tqdm(subjects_data):
         for task_name, task_data in subject_data.tasks_data.items():
             for contrast_name, fmri_data in task_data.items():
                 subject_data.tasks_data[task_name][contrast_name] = _apply_roi_mask_on_flattened_data(
