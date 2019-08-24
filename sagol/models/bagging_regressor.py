@@ -17,4 +17,5 @@ def train_bagging_regressor(x_train: np.ndarray, y_train: np.ndarray, **kwargs) 
         print(f'n_estimators for `bagging_regressor` not passed, performing grid search. Using param_grid: {param_grid} '
               f'This may take a while...')
         gs = GridSearchCV(estimator=mdl, param_grid=param_grid)
+        gs.fit(x_train, y_train)
         return gs.best_estimator_

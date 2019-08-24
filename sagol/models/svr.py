@@ -26,6 +26,7 @@ def train_svr(x_train: np.ndarray, y_train: np.ndarray, **kwargs) -> SVR:
         print(f'Performing grid search. Using param_grid: {param_grid} '
               f'This may take a while...')
         gs = GridSearchCV(estimator=mdl, param_grid=param_grid)
+        gs.fit(x_train, y_train)
         return gs.best_estimator_
     else:
         mdl.fit(x_train, y_train)
