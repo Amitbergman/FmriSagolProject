@@ -20,7 +20,7 @@ class Models:
     # {'svr' : <model>, 'multiple_regressor': <model>}
     models: dict = attrib()
 
-def generate_samples_for_model(experiment_data: FlattenedExperimentData, tasks_and_contrasts: Optional[dict],
+def generate_samples_for_model_3d(experiment_data, tasks_and_contrasts: Optional[dict],
                                ylabels: List[str], weights: Optional[List] = None) -> (np.ndarray, np.ndarray, dict):
     """
     :param tasks_and_contrasts: A dictionary of {<task_name>: [<contrast_name>, <contrast_name2>]}
@@ -76,7 +76,7 @@ def generate_samples_for_model(experiment_data: FlattenedExperimentData, tasks_a
     return X, Y, one_hot_encoding_mapping
 
 
-def generate_samples_for_model(experiment_data, tasks_and_contrasts: Optional[dict],
+def generate_samples_for_model(experiment_data: FlattenedExperimentData, tasks_and_contrasts: Optional[dict],
                                ylabels: List[str], weights: Optional[List] = None) -> (np.ndarray, np.ndarray, dict):
     """
     :param tasks_and_contrasts: A dictionary of {<task_name>: [<contrast_name>, <contrast_name2>]}
