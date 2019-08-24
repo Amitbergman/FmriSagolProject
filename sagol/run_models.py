@@ -140,10 +140,6 @@ def evalute_models(models: Models, x_test: np.ndarray, y_test: np.ndarray) -> di
 
 
 def train_model(x_train: np.ndarray, y_train: np.ndarray, model_name: str, **kwargs):
-    # Make model training as verbose as possible, unless explicitly requested otherwise.
-    if 'verbose' not in kwargs:
-        kwargs['verbose'] = 10
-
     if model_name == 'svr':
         return train_svr(x_train, y_train, **kwargs)
     elif model_name == 'bagging_regressor':
