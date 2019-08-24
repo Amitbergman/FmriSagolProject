@@ -102,7 +102,7 @@ def apply_roi_masks_3d(experiment_data: ExperimentData, roi_paths: Optional[List
 
 
     print(f'Applying ROIs in 3d mode.')
-    for subject_data in subjects_data:
+    for subject_data in exper  subjects_data:
         for task_name, task_data in subject_data.tasks_data.items():
             for contrast_name, fmri_data in task_data.items():
                 subject_data.tasks_data[task_name][contrast_name] = apply_roi_mask_on_3d_data(fmri_data, general_roi)

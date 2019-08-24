@@ -8,7 +8,6 @@ from sagol.load_data import ExperimentData, FlattenedExperimentData
 from sagol.models.svr import train_svr
 from sagol.pre_processing import *
 from sagol.rois import apply_roi_masks
-import pdb 
 AVAILABLE_MODELS = ['svr']
 import torch
 
@@ -67,9 +66,6 @@ def generate_samples_for_model_3d(experiment_data, tasks_and_contrasts: Optional
     for entry in X:
         entry[1] = get_one_hot_from_index(contrast_hot_encoding_mapping[entry[1]], current_contrast_index)
     
-
-    print("neww3432r43w2222www")
-
     # Returning the inverse dictionary to allow getting the task+contrasts out of their index.
     one_hot_encoding_mapping = {ind: task_contrast_name for task_contrast_name, ind in
                                 contrast_hot_encoding_mapping.items()}
