@@ -19,11 +19,11 @@ def get_available_rois() -> List[str]:
 
 
 def get_rois_and_voxels_mappings() -> (dict, dict):
-    print('Creating ROIs-Voxel mappings.')
     global ROIS_TO_VOXELS
     global VOXEL_TO_ROIS
 
     if not ROIS_TO_VOXELS or not VOXEL_TO_ROIS:
+        print('Creating ROIs-Voxel mappings.')
         for roi_path in get_available_rois():
             flattened_mask = get_mask_from_roi(roi_path).flatten()
             for i, val in enumerate(flattened_mask):
@@ -50,7 +50,7 @@ def _apply_roi_mask_on_flattened_data(flattened_data: np.ndarray, voxels: List[i
     return np.array(masked_data)
 
 
-def _create_vector_index_to_model_mapping(roi_paths: Optional[str]):
+def _create_vector_index_to_model_mapping(roi_paths: Optional[str]) -> dict:
     vector_index_to_voxel = {}
     if roi_paths:
         relevant_voxels = set()

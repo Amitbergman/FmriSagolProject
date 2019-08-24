@@ -3,10 +3,10 @@ from typing import List, Optional
 import numpy as np
 from attr import attrs, attrib
 from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import OneHotEncoder
 
 from sagol.load_data import ExperimentData, FlattenedExperimentData
 from sagol.models.svr import train_svr
+from sagol.pre_processing import one_hot_encode_contrasts
 from sagol.rois import apply_roi_masks
 
 AVAILABLE_MODELS = ['svr']
@@ -21,41 +21,17 @@ class Models:
     # {'svr' : <model>, 'cnn': <model>}
     models: dict = attrib()
 
-    def save(self):
-        return
-
-    @classmethod
-    def load(cls, ylabels, rois, shape):
-        raise NotImplementedError()
-
-
-def one_hot_encode_contrasts(X):
-    X = X.reshape(len(X),
-                  len(X[0]))  # Reshaping to get a matrix like numpy array is necessary for the one hot encoding ahead
-    contrast_data = X[:, -1:]  # Getting contrast data only
-
-    # Binary encoding
-    one_hot_encoder = OneHotEncoder(sparse=False, categories='auto')
-    one_hot_encoded = one_hot_encoder.fit_transform(contrast_data)  # Getting the the one hot encoded data
-
-    # Deleting old contrast int-column and replace it by one-hot-encoded column
-    X = np.delete(X, -1, axis=1)
-    X = np.concatenate((X, one_hot_encoded), axis=1)
-
-    return X
-
 
 def generate_samples_for_model(experiment_data: FlattenedExperimentData, tasks_and_contrasts: Optional[dict],
-                               ylabels: List[str], weights: Optional[List] = None):
+                               ylabels: List[str], weights: Optional[List] = None) -> (np.ndarray, np.ndarray, dict):
     """
-    :param ylabels:
     :param tasks_and_contrasts: A dictionary of {<task_name>: [<contrast_name>, <contrast_name2>]}
     Pass `None` to fetch all tasks and all contrasts. Pass None/[] inside a `task_name` to fetch all contrast for
     that specific task.
     """
     assert ylabels
-    tasks_and_contrasts = tasks_and_contrasts or {}
 
+    tasks_and_contrasts = tasks_and_contrasts or {}
     X, Y = [], []
     contrast_hot_encoding_mapping = {}
     current_contrast_index = 0
@@ -77,6 +53,7 @@ def generate_samples_for_model(experiment_data: FlattenedExperimentData, tasks_a
                         if task_contrast_name not in contrast_hot_encoding_mapping:
                             contrast_hot_encoding_mapping[task_contrast_name] = current_contrast_index
                             current_contrast_index += 1
+                        # Add the contrast as the last feature in the data.
                         X.append(np.concatenate((fmri_data, [contrast_hot_encoding_mapping[task_contrast_name]])))
                         if len(ylabels) == 1:
                             Y.append(subject_data.features_data[ylabels[0]])
@@ -84,7 +61,7 @@ def generate_samples_for_model(experiment_data: FlattenedExperimentData, tasks_a
                             Y.append([subject_data.features_data[label] for label in ylabels])
 
     # Because the numbers of the contrasts are meaningless it is necessary to convert them to one hot codes so they will not be
-    # treated as numerical features
+    # treated as numerical features.
     X = one_hot_encode_contrasts(np.array(X))
 
     # Returning the inverse dictionary to allow getting the task+contrasts out of their index.
@@ -116,15 +93,7 @@ def generate_models(experiment_data_roi_masked: FlattenedExperimentData, tasks_a
     model_params = model_params or {}
     models = {}
 
-    weights = []
-    if ylabel_to_weight:
-        assert len(ylabel_to_weight) == len(ylabels), 'Weights must be provided for all ylabels.'
-        sum_of_weights = sum(ylabel_to_weight.values()) != 1
-        if sum_of_weights:
-            print('Weights were not normalized, normalizing the weights such that the sum is 1.')
-            ylabel_to_weight = {k: v / sum_of_weights for k, v in ylabel_to_weight.items()}
-
-        weights = [ylabel_to_weight[ylabel] for ylabel in ylabels]
+    weights = generate_ylabel_weights(ylabels, ylabel_to_weight)
 
     X, Y, one_hot_encoding_mapping = generate_samples_for_model(experiment_data_roi_masked, tasks_and_contrasts,
                                                                 ylabels, weights=weights)
@@ -137,11 +106,23 @@ def generate_models(experiment_data_roi_masked: FlattenedExperimentData, tasks_a
 
     models = Models(ylabels=ylabels, roi_paths=roi_paths,
                     shape=experiment_data_roi_masked.shape, models=models)
-    models.save()
 
     scores = evalute_models(models, x_test, y_test)
     print(scores)
     return models
+
+
+def generate_ylabel_weights(ylabels: List[str], ylabel_to_weight: Optional[dict]) -> List[float]:
+    weights = []
+    if ylabel_to_weight:
+        assert len(ylabel_to_weight) == len(ylabels), 'Weights must be provided for all ylabels.'
+        sum_of_weights = sum(ylabel_to_weight.values()) != 1
+        if sum_of_weights:
+            print('Weights were not normalized, normalizing the weights such that the sum is 1.')
+            ylabel_to_weight = {k: v / sum_of_weights for k, v in ylabel_to_weight.items()}
+
+        weights = [ylabel_to_weight[ylabel] for ylabel in ylabels]
+    return weights
 
 
 def evalute_models(models: Models, x_test: np.ndarray, y_test: np.ndarray) -> dict:

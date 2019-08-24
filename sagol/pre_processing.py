@@ -1,4 +1,21 @@
 import numpy as np
+from sklearn.preprocessing import OneHotEncoder
+
+
+def one_hot_encode_contrasts(X: np.ndarray) -> np.ndarray:
+    # Reshaping to get a matrix like numpy array is necessary for the one hot encoding ahead
+    X = X.reshape(len(X), len(X[0]))
+    # Assuming the contrast feature is the last feature of X.
+    contrast_data = X[:, -1:]
+
+    one_hot_encoder = OneHotEncoder(sparse=False, categories='auto')
+    one_hot_encoded = one_hot_encoder.fit_transform(contrast_data)
+
+    # Deleting old contrast int-column and replace it by one-hot-encoded column
+    X = np.delete(X, -1, axis=1)
+    X = np.concatenate((X, one_hot_encoded), axis=1)
+
+    return X
 
 
 def group_by_contrast(X, y, first_index_of_contrast: int):
