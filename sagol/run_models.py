@@ -5,11 +5,12 @@ from attr import attrs, attrib
 from sklearn.model_selection import train_test_split
 
 from sagol.load_data import ExperimentData, FlattenedExperimentData
+from sagol.models.bagging_regressor import train_bagging_regressor
 from sagol.models.svr import train_svr
 from sagol.pre_processing import one_hot_encode_contrasts
 from sagol.rois import apply_roi_masks
 
-AVAILABLE_MODELS = ['svr']
+AVAILABLE_MODELS = ['svr', 'bagging_regressor']
 
 
 @attrs
@@ -139,7 +140,13 @@ def evalute_models(models: Models, x_test: np.ndarray, y_test: np.ndarray) -> di
 
 
 def train_model(x_train: np.ndarray, y_train: np.ndarray, model_name: str, **kwargs):
+    # Make model training as verbose as possible, unless explicitly requested otherwise.
+    if 'verbose' not in kwargs:
+        kwargs['verbose'] = 10
+
     if model_name == 'svr':
         return train_svr(x_train, y_train, **kwargs)
+    elif model_name == 'bagging_regressor':
+        return train_bagging_regressor(x_train, y_train, **kwargs)
     else:
         raise NotImplementedError(f'Model: {model_name} is not supported.')
