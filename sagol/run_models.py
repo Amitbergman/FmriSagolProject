@@ -63,8 +63,9 @@ def generate_samples_for_model_3d(experiment_data, tasks_and_contrasts: Optional
 
     # Because the numbers of the contrasts are meaningless it is necessary to convert them to one hot codes so they will not be
     # treated as numerical features.
+    number_of_contrasts = current_contrast_index
     for entry in X:
-        entry[1] = get_one_hot_from_index(contrast_hot_encoding_mapping[entry[1]], current_contrast_index)
+        entry[1] = get_one_hot_from_index(contrast_hot_encoding_mapping[entry[1]], number_of_contrasts)
     
     # Returning the inverse dictionary to allow getting the task+contrasts out of their index.
     one_hot_encoding_mapping = {ind: task_contrast_name for task_contrast_name, ind in
