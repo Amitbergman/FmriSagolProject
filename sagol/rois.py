@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import List, Union, Optional
 
 import numpy as np
+from tqdm import tqdm
 
 from sagol import config
 from sagol.load_data import ExperimentData, convert_nifty_to_image_array, FlattenedExperimentData
@@ -24,14 +25,14 @@ def get_rois_and_voxels_mappings() -> (dict, dict):
 
     if not ROIS_TO_VOXELS or not VOXEL_TO_ROIS:
         print('Creating ROIs-Voxel mappings.')
-        for roi_path in get_available_rois():
+        for roi_path in tqdm(get_available_rois()):
             flattened_mask = get_mask_from_roi(roi_path).flatten()
             for i, val in enumerate(flattened_mask):
                 if val != 0:
                     ROIS_TO_VOXELS[roi_path].append(i)
                     VOXEL_TO_ROIS[i].append(roi_path)
 
-    return dict(ROIS_TO_VOXELS), dict(VOXEL_TO_ROIS)
+    return ROIS_TO_VOXELS, VOXEL_TO_ROIS
 
 
 def get_mask_from_roi(roi_path: Union[Path, str]) -> np.array:
