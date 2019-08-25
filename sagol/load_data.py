@@ -3,12 +3,16 @@ import re
 from collections import defaultdict
 from typing import List, Optional
 
+import logbook
 import nibabel as nib
 import numpy as np
 import pandas as pd
 from attr import attrs, attrib
+from tqdm import tqdm
 
 SUBJECT_NAME_REGEX = re.compile('sub-(\d+).*')
+
+logger = logbook.Logger(__name__)
 
 
 @attrs
@@ -69,12 +73,14 @@ def merge_subject_dfs(dfs: List[pd.DataFrame], column_to_merge_on='Sub') -> pd.D
 def create_subject_experiment_data(excel_paths: List[str], nifty_dirs: List[str]) -> ExperimentData:
     assert excel_paths
     assert nifty_dirs
+    logger.info('Creating subjects experiment data.')
 
     tasks_data = defaultdict(lambda: defaultdict(dict))
     tasks_metadata = defaultdict(list)
     experiment_data = []
     dfs = []
 
+    logger.info('Loading excel data.')
     for excel_path in excel_paths:
         # Read excel file with multiple sheets, allows for merging the data belonging to the same subject later.
         if excel_path.endswith('.xlsx') or excel_path.endswith('.xls'):
@@ -87,12 +93,13 @@ def create_subject_experiment_data(excel_paths: List[str], nifty_dirs: List[str]
     features_df = merge_subject_dfs(dfs)
     # Transform NaN/NaT to None
     features_df = features_df.where((pd.notnull(features_df)), None)
+    logger.info('Done loading excel data.')
 
     # Extract fMRI data
     for nifty_dir in nifty_dirs:
         task_name = os.path.basename(nifty_dir)
-        print(f'Loading data for task: {task_name}')
-        for contrast_name in filter(lambda p: os.path.isdir(os.path.join(nifty_dir, p)), os.listdir(nifty_dir)):
+        logger.info(f'Loading data for task: {task_name}')
+        for contrast_name in tqdm(filter(lambda p: os.path.isdir(os.path.join(nifty_dir, p)), os.listdir(nifty_dir))):
             contrast_folder = os.path.join(nifty_dir, contrast_name)
             if not contrast_folder.startswith('.'):
                 tasks_metadata[task_name].append(contrast_name)
@@ -100,7 +107,9 @@ def create_subject_experiment_data(excel_paths: List[str], nifty_dirs: List[str]
                 pth = os.path.join(contrast_folder, fname)
                 subject_num = int(SUBJECT_NAME_REGEX.findall(os.path.basename(pth))[0])
                 tasks_data[subject_num][task_name][contrast_name] = convert_nifty_to_image_array(pth)
+    logger.info('Done loading fMRI data.')
 
+    logger.info('Merging subjects data.')
     subjects = sorted(list(features_df['Sub']))
 
     for subject in subjects:
@@ -118,4 +127,5 @@ def create_subject_experiment_data(excel_paths: List[str], nifty_dirs: List[str]
     example_tasks_data = example_subject_data[list(example_subject_data.keys())[0]]
     shape = example_tasks_data[list(example_tasks_data.keys())[0]].shape
 
+    logger.info('Done creating subjects experiment data.')
     return ExperimentData(subjects_data=experiment_data, tasks_metadata=dict(tasks_metadata), shape=shape)

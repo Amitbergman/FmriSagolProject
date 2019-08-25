@@ -1,15 +1,23 @@
 from typing import List, Optional
 
+import logbook
 import numpy as np
 from attr import attrs, attrib
 from sklearn.model_selection import train_test_split
 
 from sagol.load_data import ExperimentData, FlattenedExperimentData
+from sagol.models.bagging_regressor import train_bagging_regressor
 from sagol.models.svr import train_svr
 from sagol.pre_processing import *
 from sagol.rois import apply_roi_masks
-AVAILABLE_MODELS = ['svr']
 import torch
+
+
+AVAILABLE_MODELS = ['svr', 'bagging_regressor']
+
+logger = logbook.Logger(__name__)
+
+
 
 @attrs
 class Models:
@@ -163,13 +171,13 @@ def generate_models(experiment_data_roi_masked: FlattenedExperimentData, tasks_a
     for model_name in AVAILABLE_MODELS:
         models[model_name] = train_model(x_train, y_train, model_name=model_name,
                                          **model_params.get(model_name, {}))
-        print(f'Trained {model_name} model, score on train data: {models[model_name].score(x_train, y_train)}.')
+        logger.info(f'Trained {model_name} model, score on train data: {models[model_name].score(x_train, y_train)}.')
 
     models = Models(ylabels=ylabels, roi_paths=roi_paths,
                     shape=experiment_data_roi_masked.shape, models=models)
 
     scores = evalute_models(models, x_test, y_test)
-    print(scores)
+    logger.info(scores)
     return models
 
 
@@ -179,7 +187,7 @@ def generate_ylabel_weights(ylabels: List[str], ylabel_to_weight: Optional[dict]
         assert len(ylabel_to_weight) == len(ylabels), 'Weights must be provided for all ylabels.'
         sum_of_weights = sum(ylabel_to_weight.values()) != 1
         if sum_of_weights:
-            print('Weights were not normalized, normalizing the weights such that the sum is 1.')
+            logger.info('Weights were not normalized, normalizing the weights such that the sum is 1.')
             ylabel_to_weight = {k: v / sum_of_weights for k, v in ylabel_to_weight.items()}
 
         weights = [ylabel_to_weight[ylabel] for ylabel in ylabels]
@@ -196,5 +204,7 @@ def evalute_models(models: Models, x_test: np.ndarray, y_test: np.ndarray) -> di
 def train_model(x_train: np.ndarray, y_train: np.ndarray, model_name: str, **kwargs):
     if model_name == 'svr':
         return train_svr(x_train, y_train, **kwargs)
+    elif model_name == 'bagging_regressor':
+        return train_bagging_regressor(x_train, y_train, **kwargs)
     else:
         raise NotImplementedError(f'Model: {model_name} is not supported.')

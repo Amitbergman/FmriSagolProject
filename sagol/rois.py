@@ -4,10 +4,14 @@ from collections import defaultdict
 from pathlib import Path
 from typing import List, Union, Optional
 
+import logbook
 import numpy as np
+from tqdm import tqdm
 
 from sagol import config
 from sagol.load_data import ExperimentData, convert_nifty_to_image_array, FlattenedExperimentData
+
+logger = logbook.Logger(__name__)
 
 # Flattened
 ROIS_TO_VOXELS = defaultdict(list)
@@ -23,15 +27,15 @@ def get_rois_and_voxels_mappings() -> (dict, dict):
     global VOXEL_TO_ROIS
 
     if not ROIS_TO_VOXELS or not VOXEL_TO_ROIS:
-        print('Creating ROIs-Voxel mappings.')
-        for roi_path in get_available_rois():
+        logger.info('Creating ROIs-Voxel mappings.')
+        for roi_path in tqdm(get_available_rois()):
             flattened_mask = get_mask_from_roi(roi_path).flatten()
             for i, val in enumerate(flattened_mask):
                 if val != 0:
                     ROIS_TO_VOXELS[roi_path].append(i)
                     VOXEL_TO_ROIS[i].append(roi_path)
 
-    return dict(ROIS_TO_VOXELS), dict(VOXEL_TO_ROIS)
+    return ROIS_TO_VOXELS, VOXEL_TO_ROIS
 
 
 def get_mask_from_roi(roi_path: Union[Path, str]) -> np.array:
@@ -76,8 +80,8 @@ def apply_roi_masks(experiment_data: ExperimentData, roi_paths: Optional[List[st
 
     subjects_data = copy.deepcopy(experiment_data.subjects_data)
 
-    print(f'Applying ROIs.')
-    for subject_data in subjects_data:
+    logger.info(f'Applying ROIs.')
+    for subject_data in tqdm(subjects_data):
         for task_name, task_data in subject_data.tasks_data.items():
             for contrast_name, fmri_data in task_data.items():
                 subject_data.tasks_data[task_name][contrast_name] = _apply_roi_mask_on_flattened_data(
