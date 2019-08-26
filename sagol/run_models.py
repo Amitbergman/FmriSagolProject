@@ -1,7 +1,7 @@
 from typing import List, Optional
 
 import logbook
-import numpy as np
+import torch
 from attr import attrs, attrib
 from sklearn.model_selection import train_test_split
 
@@ -10,13 +10,10 @@ from sagol.models.bagging_regressor import train_bagging_regressor
 from sagol.models.svr import train_svr
 from sagol.pre_processing import *
 from sagol.rois import apply_roi_masks
-import torch
-
 
 AVAILABLE_MODELS = ['svr', 'bagging_regressor']
 
 logger = logbook.Logger(__name__)
-
 
 
 @attrs
@@ -28,65 +25,10 @@ class Models:
     # {'svr' : <model>, 'multiple_regressor': <model>}
     models: dict = attrib()
 
-def generate_samples_for_model_3d(experiment_data, tasks_and_contrasts: Optional[dict],
-                               ylabels: List[str], weights: Optional[List] = None) -> (np.ndarray, np.ndarray, dict):
-    """
-    :param tasks_and_contrasts: A dictionary of {<task_name>: [<contrast_name>, <contrast_name2>]}
-    Pass `None` to fetch all tasks and all contrasts. Pass None/[] inside a `task_name` to fetch all contrast for
-    that specific task.
-    """
-    assert ylabels
-
-    tasks_and_contrasts = tasks_and_contrasts or {}
-    X, Y = [], []
-
-    # We need to differentiate images of the same brain "cut" belonging to different contrast.
-    # To do so, we use one hot encoding of the task + contrast combination.
-    contrast_hot_encoding_mapping = {}
-    current_contrast_index = 0
-
-    use_all_tasks = not bool(tasks_and_contrasts)
-    if use_all_tasks:
-        task_names = []
-    else:
-        task_names = tasks_and_contrasts.keys()
-
-    for subject_data in experiment_data.subjects_data:
-        for task_name, task_data in subject_data.tasks_data.items():
-            if use_all_tasks or task_name in task_names:
-                use_all_contrasts = not bool(tasks_and_contrasts.get(task_name))
-
-                for contrast_name, fmri_data in task_data.items():
-                    if use_all_contrasts or contrast_name in tasks_and_contrasts.get(task_name, []):
-                        task_contrast_name = f'{task_name}.{contrast_name}'
-                        if task_contrast_name not in contrast_hot_encoding_mapping:
-                            contrast_hot_encoding_mapping[task_contrast_name] = current_contrast_index
-                            current_contrast_index += 1
-                        # Add the contrast as the last feature in the data.
-                        X.append([torch.from_numpy(fmri_data), task_contrast_name])
-                        if len(ylabels) == 1:
-                            Y.append(subject_data.features_data[ylabels[0]])
-                        else:
-                            Y.append([subject_data.features_data[label] for label in ylabels])
-
-    # Because the numbers of the contrasts are meaningless it is necessary to convert them to one hot codes so they will not be
-    # treated as numerical features.
-    number_of_contrasts = current_contrast_index
-    for entry in X:
-        entry[1] = get_one_hot_from_index(contrast_hot_encoding_mapping[entry[1]], number_of_contrasts)
-    
-    # Returning the inverse dictionary to allow getting the task+contrasts out of their index.
-    one_hot_encoding_mapping = {ind: task_contrast_name for task_contrast_name, ind in
-                                contrast_hot_encoding_mapping.items()}
-
-    # In case of multiple labels, use a weighted sum.
-    Y = [np.average(y, weights=weights) for y in Y]
-
-    return X, Y, one_hot_encoding_mapping
-
 
 def generate_samples_for_model(experiment_data: FlattenedExperimentData, tasks_and_contrasts: Optional[dict],
-                               ylabels: List[str], weights: Optional[List] = None) -> (np.ndarray, np.ndarray, dict):
+                               ylabels: List[str], weights: Optional[List] = None, is_3d=False) -> (
+        np.ndarray, np.ndarray, dict):
     """
     :param tasks_and_contrasts: A dictionary of {<task_name>: [<contrast_name>, <contrast_name2>]}
     Pass `None` to fetch all tasks and all contrasts. Pass None/[] inside a `task_name` to fetch all contrast for
@@ -120,7 +62,10 @@ def generate_samples_for_model(experiment_data: FlattenedExperimentData, tasks_a
                             contrast_hot_encoding_mapping[task_contrast_name] = current_contrast_index
                             current_contrast_index += 1
                         # Add the contrast as the last feature in the data.
-                        X.append(np.concatenate((fmri_data, [contrast_hot_encoding_mapping[task_contrast_name]])))
+                        if is_3d:
+                            X.append([torch.from_numpy(fmri_data), task_contrast_name])
+                        else:
+                            X.append(np.concatenate((fmri_data, [contrast_hot_encoding_mapping[task_contrast_name]])))
                         if len(ylabels) == 1:
                             Y.append(subject_data.features_data[ylabels[0]])
                         else:
@@ -128,7 +73,12 @@ def generate_samples_for_model(experiment_data: FlattenedExperimentData, tasks_a
 
     # Because the numbers of the contrasts are meaningless it is necessary to convert them to one hot codes so they will not be
     # treated as numerical features.
-    X = one_hot_encode_contrasts(np.array(X))
+    if is_3d:
+        number_of_contrasts = current_contrast_index
+        for entry in X:
+            entry[1] = get_one_hot_from_index(contrast_hot_encoding_mapping[entry[1]], number_of_contrasts)
+    else:
+        X = one_hot_encode_contrasts(np.array(X))
 
     # Returning the inverse dictionary to allow getting the task+contrasts out of their index.
     one_hot_encoding_mapping = {ind: task_contrast_name for task_contrast_name, ind in
