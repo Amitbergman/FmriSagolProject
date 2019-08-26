@@ -11,9 +11,10 @@ from sagol.models.svr import train_svr
 from sagol.pre_processing import *
 from sagol.rois import apply_roi_masks
 import torch
+from sagol.models.nusvr import train_nusvr
 
 
-AVAILABLE_MODELS = ['svr', 'bagging_regressor']
+AVAILABLE_MODELS = ['svr', 'bagging_regressor', 'nusvr']
 
 logger = logbook.Logger(__name__)
 
@@ -206,5 +207,7 @@ def train_model(x_train: np.ndarray, y_train: np.ndarray, model_name: str, **kwa
         return train_svr(x_train, y_train, **kwargs)
     elif model_name == 'bagging_regressor':
         return train_bagging_regressor(x_train, y_train, **kwargs)
+    elif model_name == 'nusvr':
+        return train_nusvr(x_train, y_train, **kwargs)
     else:
         raise NotImplementedError(f'Model: {model_name} is not supported.')
