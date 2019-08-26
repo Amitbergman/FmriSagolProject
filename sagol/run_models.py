@@ -26,15 +26,17 @@ class Models:
     models: dict = attrib()
 
 
-def generate_samples_for_model(experiment_data: FlattenedExperimentData, tasks_and_contrasts: Optional[dict],
-                               ylabels: List[str], weights: Optional[List] = None, is_3d=False) -> (
-        np.ndarray, np.ndarray, dict):
+def generate_samples_for_model(experiment_data: Union[FlattenedExperimentData, ExperimentData],
+                               tasks_and_contrasts: Optional[dict], ylabels: List[str],
+                               weights: Optional[List] = None) -> (np.ndarray, np.ndarray, dict):
     """
     :param tasks_and_contrasts: A dictionary of {<task_name>: [<contrast_name>, <contrast_name2>]}
     Pass `None` to fetch all tasks and all contrasts. Pass None/[] inside a `task_name` to fetch all contrast for
     that specific task.
     """
     assert ylabels
+    # Whether the fMRI data is flattened or 3D.
+    is_3d = isinstance(experiment_data, ExperimentData)
 
     tasks_and_contrasts = tasks_and_contrasts or {}
     X, Y = [], []

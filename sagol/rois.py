@@ -53,6 +53,7 @@ def _apply_roi_mask_on_flattened_data(flattened_data: np.ndarray, voxels: List[i
         masked_data.append(flattened_data[voxel])
     return np.array(masked_data)
 
+
 def _create_vector_index_to_model_mapping(roi_paths: Optional[str]) -> dict:
     vector_index_to_voxel = {}
     if roi_paths:

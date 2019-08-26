@@ -1,9 +1,15 @@
 ## Setup:
 
-* Create a conda env + jupyter kernel
+* Create a conda env + pytorch
 ```
 conda create -n sagol python=3.7
 conda activate sagol
+
+MacOS:
+conda install pytorch torchvision -c pytorch
+Windows:
+conda install pytorch torchvision cudatoolkit=10.0 -c pytorch
+
 ```
 
 * Install dependencies:
