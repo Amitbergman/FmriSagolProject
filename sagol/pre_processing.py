@@ -1,8 +1,8 @@
 import numpy as np
 from sklearn.preprocessing import OneHotEncoder
 
+
 def get_one_hot_from_index(index, size):
-    
     res = np.zeros(size)
     res[index] = 1.0
     return res
