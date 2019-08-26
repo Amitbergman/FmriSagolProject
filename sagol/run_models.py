@@ -3,9 +3,9 @@ from typing import Union, List, Optional
 import logbook
 import numpy as np
 import torch
-from attr import attrs, attrib
 from sklearn.model_selection import train_test_split
 
+from sagol.evaluate_models import evalute_models, Models
 from sagol.load_data import FlattenedExperimentData, ExperimentData
 from sagol.models.bagging_regressor import train_bagging_regressor
 from sagol.models.nusvr import train_nusvr
@@ -16,16 +16,6 @@ from sagol.rois import apply_roi_masks
 AVAILABLE_MODELS = ['svr', 'bagging_regressor', 'nusvr']
 
 logger = logbook.Logger(__name__)
-
-
-@attrs
-class Models:
-    ylabels: List[str] = attrib()
-    roi_paths: Optional[List[str]] = attrib()
-    # (x, y, z)
-    shape: tuple = attrib()
-    # {'svr' : <model>, 'multiple_regressor': <model>}
-    models: dict = attrib()
 
 
 def generate_samples_for_model(experiment_data: Union[FlattenedExperimentData, ExperimentData],
@@ -126,8 +116,8 @@ def generate_models(experiment_data_roi_masked: FlattenedExperimentData, tasks_a
     models = Models(ylabels=ylabels, roi_paths=roi_paths,
                     shape=experiment_data_roi_masked.shape, models=models)
 
-    scores = evalute_models(models, x_test, y_test)
-    logger.info(scores)
+    models = evalute_models(models, x_test, y_test)
+    logger.info(f'Model scores: {models.scores}')
     return models
 
 
@@ -142,13 +132,6 @@ def generate_ylabel_weights(ylabels: List[str], ylabel_to_weight: Optional[dict]
 
         weights = [ylabel_to_weight[ylabel] for ylabel in ylabels]
     return weights
-
-
-def evalute_models(models: Models, x_test: np.ndarray, y_test: np.ndarray) -> dict:
-    scores = {}
-    for model_name, model in models.models.items():
-        scores[model_name] = model.score(x_test, y_test)
-    return scores
 
 
 def train_model(x_train: np.ndarray, y_train: np.ndarray, model_name: str, **kwargs):
