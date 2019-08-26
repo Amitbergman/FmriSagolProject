@@ -6,13 +6,13 @@ import torch
 from attr import attrs, attrib
 from sklearn.model_selection import train_test_split
 
-from sagol.load_data import FlattenedExperimentData, ExperimentData
+from sagol.load_data import FlattenedExperimentData, ExperimentData, ExperimentDataAfterSplit
 from sagol.models.bagging_regressor import train_bagging_regressor
 from sagol.models.nusvr import train_nusvr
 from sagol.models.svr import train_svr
 from sagol.pre_processing import generate_subjects_ylabel, one_hot_encode_contrasts, get_one_hot_from_index
 from sagol.rois import apply_roi_masks
-
+from sagol.deducability import deduce_by_leave_one_roi_out
 AVAILABLE_MODELS = ['svr', 'bagging_regressor', 'nusvr']
 
 logger = logbook.Logger(__name__)
@@ -108,7 +108,7 @@ def get_pre_computed_models() -> Optional[Models]:
 
 def generate_models(experiment_data_roi_masked: FlattenedExperimentData, tasks_and_contrasts: dict,
                     ylabels: List[str], roi_paths: Optional[List[str]], ylabel_to_weight: Optional[dict] = None,
-                    model_params: Optional[dict] = None) -> Models:
+                    model_params: Optional[dict] = None) -> (Models, ExperimentDataAfterSplit):
     model_params = model_params or {}
     models = {}
 
@@ -128,7 +128,15 @@ def generate_models(experiment_data_roi_masked: FlattenedExperimentData, tasks_a
 
     scores = evalute_models(models, x_test, y_test)
     logger.info(scores)
-    return models
+    experiment_data_after_split = ExperimentDataAfterSplit(
+    original_x_train=x_train,
+    original_y_train = y_train,
+    original_x_test=x_test,
+    original_y_test=y_test,
+    flattened_vector_index_to_rois=experiment_data_roi_masked.flattened_vector_index_to_rois,
+    )
+
+    return (models, experiment_data_after_split)
 
 
 def generate_ylabel_weights(ylabels: List[str], ylabel_to_weight: Optional[dict]) -> List[float]:
