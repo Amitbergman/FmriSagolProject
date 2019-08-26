@@ -17,10 +17,10 @@ class Models:
     # {'svr' : 0.52, 'bagging_regressor': 0.48}
     scores: dict = attrib(default={})
     # {'svr' : <graph>, 'bagging_regressor': <graph>}
-    residual_graphs: dict = attrib(default={})
+    residual_plots: dict = attrib(default={})
 
 
-def create_residual_graph(model, model_name: str, x_test: np.array, y_test: np.array) -> Figure:
+def create_residual_plot(model, model_name: str, x_test: np.array, y_test: np.array) -> Figure:
     fig = plt.figure()
     plt.xlabel('True', figure=fig)
     plt.ylabel('Predicted', figure=fig)
@@ -37,5 +37,5 @@ def create_residual_graph(model, model_name: str, x_test: np.array, y_test: np.a
 def evalute_models(models: Models, x_test: np.ndarray, y_test: np.ndarray) -> Models:
     for model_name, model in models.models.items():
         models.scores[model_name] = model.score(x_test, y_test)
-        models.residual_graphs[model_name] = create_residual_graph(model, model_name, x_test, y_test)
+        models.residual_plots[model_name] = create_residual_plot(model, model_name, x_test, y_test)
     return models
