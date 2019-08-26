@@ -1,14 +1,15 @@
-from typing import List, Optional, Union
+import logbook
+import numpy as np
+from typing import Union, List, Optional
 
 import torch
 from attr import attrs, attrib
 from sklearn.model_selection import train_test_split
 
-from sagol.load_data import ExperimentData
+from sagol.load_data import FlattenedExperimentData, ExperimentData
 from sagol.models.bagging_regressor import train_bagging_regressor
 from sagol.models.svr import train_svr
-from sagol.pre_processing import *
-from sagol.pre_processing import generate_subjects_ylabel
+from sagol.pre_processing import generate_subjects_ylabel, one_hot_encode_contrasts, get_one_hot_from_index
 from sagol.rois import apply_roi_masks
 
 AVAILABLE_MODELS = ['svr', 'bagging_regressor']
