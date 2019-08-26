@@ -1,15 +1,6 @@
 from sagol.load_data import FlattenedExperimentData, ExperimentDataAfterSplit
-from sagol.run_models import *
+from sagol.evaluate_models import Models 
 import copy
-
-@attrs
-class Models:
-    ylabels: List[str] = attrib()
-    roi_paths: Optional[List[str]] = attrib()
-    # (x, y, z)
-    shape: tuple = attrib()
-    # {'svr' : <model>, 'multiple_regressor': <model>}
-    models: dict = attrib()
 
 def deduce_by_leave_one_roi_out(models:Models, flattened_experiment_data: ExperimentDataAfterSplit):
 #will return the score without roi1, without roi2

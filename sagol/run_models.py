@@ -3,10 +3,10 @@ from typing import Union, List, Optional
 import logbook
 import numpy as np
 import torch
-from attr import attrs, attrib
 from sklearn.model_selection import train_test_split
 
 from sagol.load_data import FlattenedExperimentData, ExperimentData, ExperimentDataAfterSplit
+from sagol.evaluate_models import evalute_models, Models
 from sagol.models.bagging_regressor import train_bagging_regressor
 from sagol.models.nusvr import train_nusvr
 from sagol.models.svr import train_svr
@@ -16,16 +16,6 @@ from sagol.deducability import deduce_by_leave_one_roi_out
 AVAILABLE_MODELS = ['svr', 'bagging_regressor', 'nusvr']
 
 logger = logbook.Logger(__name__)
-
-
-@attrs
-class Models:
-    ylabels: List[str] = attrib()
-    roi_paths: Optional[List[str]] = attrib()
-    # (x, y, z)
-    shape: tuple = attrib()
-    # {'svr' : <model>, 'multiple_regressor': <model>}
-    models: dict = attrib()
 
 
 def generate_samples_for_model(experiment_data: Union[FlattenedExperimentData, ExperimentData],
@@ -98,8 +88,11 @@ def get_or_create_models(experiment_data: ExperimentData, tasks_and_contrasts: O
     masked_experiment_data = apply_roi_masks(experiment_data, roi_paths)
 
     pre_computed_models = get_pre_computed_models()
-    return pre_computed_models or generate_models(masked_experiment_data, tasks_and_contrasts, ylabels, roi_paths,
-                                                  ylabel_to_weight=ylabel_to_weight, model_params=model_params)
+    if pre_computed_models:
+        return pre_computed_models
+    else:
+        models, experiment_data_after_split = generate_models(masked_experiment_data, tasks_and_contrasts, ylabels, roi_paths, ylabel_to_weight=ylabel_to_weight, model_params=model_params)
+        return models
 
 
 def get_pre_computed_models() -> Optional[Models]:
@@ -126,8 +119,7 @@ def generate_models(experiment_data_roi_masked: FlattenedExperimentData, tasks_a
     models = Models(ylabels=ylabels, roi_paths=roi_paths,
                     shape=experiment_data_roi_masked.shape, models=models)
 
-    scores = evalute_models(models, x_test, y_test)
-    logger.info(scores)
+
     experiment_data_after_split = ExperimentDataAfterSplit(
     original_x_train=x_train,
     original_y_train = y_train,
@@ -136,7 +128,9 @@ def generate_models(experiment_data_roi_masked: FlattenedExperimentData, tasks_a
     flattened_vector_index_to_rois=experiment_data_roi_masked.flattened_vector_index_to_rois,
     )
 
-    return (models, experiment_data_after_split)
+    models = evalute_models(models, x_test, y_test)
+    logger.info(f'Model scores: {models.scores}')
+    return models, experiment_data_after_split
 
 
 def generate_ylabel_weights(ylabels: List[str], ylabel_to_weight: Optional[dict]) -> List[float]:
@@ -150,13 +144,6 @@ def generate_ylabel_weights(ylabels: List[str], ylabel_to_weight: Optional[dict]
 
         weights = [ylabel_to_weight[ylabel] for ylabel in ylabels]
     return weights
-
-
-def evalute_models(models: Models, x_test: np.ndarray, y_test: np.ndarray) -> dict:
-    scores = {}
-    for model_name, model in models.models.items():
-        scores[model_name] = model.score(x_test, y_test)
-    return scores
 
 
 def train_model(x_train: np.ndarray, y_train: np.ndarray, model_name: str, **kwargs):
