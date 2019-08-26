@@ -47,7 +47,14 @@ class FlattenedExperimentData:
     flattened_vector_index_to_rois: dict = attrib()
     # (x, y, z)
     shape: tuple = attrib()
-
+        
+@attrs
+class ExperimentDataAfterSplit:
+    original_x_test: np.ndarray = attrib()
+    original_x_train: np.ndarray = attrib()
+    original_y_train: np.ndarray = attrib()
+    original_y_test: np.ndarray = attrib()
+    flattened_vector_index_to_rois: dict = attrib()
 
 def convert_nifty_to_image_array(path: str) -> np.array:
     data = nib.load(path).get_fdata()
