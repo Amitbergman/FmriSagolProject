@@ -12,6 +12,8 @@ logger = logbook.Logger(__name__)
 
 def generate_subjects_ylabel(experiment_data: Union[FlattenedExperimentData, ExperimentData], ylabels: List[str],
                              weights: Optional[List] = None, normalization: str = config.NORMALIZATION) -> List[float]:
+    weights = weights or None
+
     # In case there are multiple ylabels, we don't know whether they are using the same scale.
     # Therefore, we normalize to [0, 1]
     if len(ylabels) > 1:
@@ -28,11 +30,11 @@ def generate_subjects_ylabel(experiment_data: Union[FlattenedExperimentData, Exp
         # In case of multiple labels, use a weighted sum provided by the user if given.
         if weights:
             logger.info('Applying ylabel weights.')
+
         subjects_ylabel = [np.average(y, weights=weights) for y in subjects_ylabel]
     else:
         subjects_ylabel = [subject.features_data[ylabels[0]] for subject in experiment_data.subjects_data]
     return subjects_ylabel
-
 
 
 def get_one_hot_from_index(index, size):
