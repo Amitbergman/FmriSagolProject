@@ -25,7 +25,6 @@ def train_nusvr(x_train: np.ndarray, y_train: np.ndarray, **kwargs) -> NuSVR:
                     f'This may take a while...')
         gs = GridSearchCV(estimator=mdl, param_grid=param_grid, verbose=12)
         gs.fit(x_train, y_train)
-        return gs.best_estimator_
-    else:
-        mdl.fit(x_train, y_train)
-        return mdl
+        mdl = gs.best_estimator_
+    mdl.fit(x_train, y_train)
+    return mdl
