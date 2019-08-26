@@ -1,13 +1,16 @@
+from typing import Union, List, Optional
+
 import logbook
 import numpy as np
 from sklearn.preprocessing import OneHotEncoder, MinMaxScaler
 
-from sagol.load_data import FlattenedExperimentData
+from sagol.load_data import FlattenedExperimentData, ExperimentData
 
 logger = logbook.Logger(__name__)
 
 
-def generate_subjects_ylabel(experiment_data: FlattenedExperimentData, ylabels, weights):
+def generate_subjects_ylabel(experiment_data: Union[FlattenedExperimentData, ExperimentData], ylabels: List[str],
+                             weights: Optional[List] = None) -> List[float]:
     # In case there are multiple ylabels, we don't know whether they are using the same scale.
     # Therefore, we normalize to [0, 1]
     if len(ylabels) > 1:
