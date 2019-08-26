@@ -1,18 +1,18 @@
-import logbook
-import numpy as np
 from typing import Union, List, Optional
 
+import logbook
+import numpy as np
 import torch
 from attr import attrs, attrib
 from sklearn.model_selection import train_test_split
 
 from sagol.load_data import FlattenedExperimentData, ExperimentData
 from sagol.models.bagging_regressor import train_bagging_regressor
+from sagol.models.nusvr import train_nusvr
 from sagol.models.svr import train_svr
 from sagol.pre_processing import generate_subjects_ylabel, one_hot_encode_contrasts, get_one_hot_from_index
 from sagol.rois import apply_roi_masks
-import torch
-from sagol.models.nusvr import train_nusvr
+
 AVAILABLE_MODELS = ['svr', 'bagging_regressor', 'nusvr']
 
 logger = logbook.Logger(__name__)

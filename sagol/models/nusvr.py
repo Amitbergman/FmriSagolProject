@@ -8,7 +8,6 @@ logger = logbook.Logger(__name__)
 
 
 def train_nusvr(x_train: np.ndarray, y_train: np.ndarray, **kwargs) -> NuSVR:
-    # Parallelize training on all CPUs.
     mdl = NuSVR(gamma='scale', kernel='rbf' )
 
     should_grid_search = False
