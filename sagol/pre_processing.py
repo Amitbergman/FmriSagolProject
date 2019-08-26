@@ -2,21 +2,27 @@ from typing import Union, List, Optional
 
 import logbook
 import numpy as np
-from sklearn.preprocessing import OneHotEncoder, MinMaxScaler
+from sklearn.preprocessing import OneHotEncoder, MinMaxScaler, StandardScaler
 
+from sagol import config
 from sagol.load_data import FlattenedExperimentData, ExperimentData
 
 logger = logbook.Logger(__name__)
 
 
 def generate_subjects_ylabel(experiment_data: Union[FlattenedExperimentData, ExperimentData], ylabels: List[str],
-                             weights: Optional[List] = None) -> List[float]:
+                             weights: Optional[List] = None, normalization: str = config.NORMALIZATION) -> List[float]:
     # In case there are multiple ylabels, we don't know whether they are using the same scale.
     # Therefore, we normalize to [0, 1]
     if len(ylabels) > 1:
         logger.info('More than 1 ylabel was passed, performing 0-1 normalization on the labels.')
         y_data = [[subject.features_data[ylabel] for ylabel in ylabels] for subject in experiment_data.subjects_data]
-        scaler = MinMaxScaler()
+        if normalization == 'z-score':
+            scaler = StandardScaler()
+        elif normalization == 'zero-one':
+            scaler = MinMaxScaler()
+        else:
+            raise NotImplementedError('Only `z-score` and `zero-one` normalizations are supported.')
         subjects_ylabel = scaler.fit_transform(y_data)
 
         # In case of multiple labels, use a weighted sum provided by the user if given.
