@@ -2,7 +2,8 @@ import tkinter as tk
 from tkinter import filedialog
 import os
 
-STATE = {}
+from sagol.gui.data_filtering_window import open_data_filtering_window
+from sagol.gui.globals import STATE
 
 
 def open_excel_selector(parent):
@@ -19,12 +20,26 @@ def open_excel_selector(parent):
 def open_root_dir_selector(parent):
     root_dir = filedialog.askdirectory(initialdir="/", title="Select root directory")
     STATE['root_dir'] = root_dir
-    STATE['tasks_metadata'] = {}
-    tasks_list = [dir_name for dir_name in os.listdir(root_dir) if not dir_name.startswith('.') and os.path.isdir(os.path.join(root_dir, dir_name))]
-    for task in tasks_list:
-        cur_path = os.path.join(root_dir, task)
-        contrasts = [dir_name for dir_name in os.listdir(cur_path) if not dir_name.startswith('.') and os.path.isdir(os.path.join(cur_path, dir_name))]
-        STATE['tasks_metadata'][task] = contrasts
+
+    task_names = [dir_name for dir_name in os.listdir(root_dir) if
+                  not dir_name.startswith('.') and os.path.isdir(os.path.join(root_dir, dir_name))]
+    STATE['task_names'] = task_names
+
     root_dir_label = tk.Label(parent, text=root_dir)
     root_dir_label.pack()
 
+
+def display_tasks_selector(parent):
+    contrast_selector = tk.Listbox(parent, selectmode=tk.MULTIPLE)
+    for task in STATE['task_names']:
+        contrast_selector.insert(tk.END, task)
+    contrast_selector.pack()
+    return contrast_selector
+
+
+def create_load_data_button(parent, contrasts_selector):
+    load_data_button = tk.Button(parent,
+                                 text="Load data",
+                                 fg="green",
+                                 command=lambda: open_data_filtering_window(contrasts_selector))
+    load_data_button.pack(side=tk.LEFT)
