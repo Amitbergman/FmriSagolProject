@@ -15,9 +15,19 @@ class Models:
     # {'svr' : <model>, 'bagging_regressor': <model>}
     models: dict = attrib(default={})
     # {'svr' : 0.52, 'bagging_regressor': 0.48}
-    scores: dict = attrib(default={})
+    train_scores: dict = attrib(default={})
+    # {'svr' : 0.52, 'bagging_regressor': 0.48}
+    test_scores: dict = attrib(default={})
     # {'svr' : <graph>, 'bagging_regressor': <graph>}
     residual_plots: dict = attrib(default={})
+    # {'svr': dict{str:value}, 'bagging_regressor': dict{str:value}}
+    parameters: dict = attrib(default={})
+
+    def get_train_score(self, model_name):
+        return self.train_scores[model_name] if model_name in self.train_scores else None
+
+    def get_test_score(self, model_name):
+        return self.test_scores[model_name] if model_name in self.test_scores else None
 
 
 def create_residual_plot(model, model_name: str, x_test: np.array, y_test: np.array) -> Figure:
@@ -36,6 +46,6 @@ def create_residual_plot(model, model_name: str, x_test: np.array, y_test: np.ar
 
 def evalute_models(models: Models, x_test: np.ndarray, y_test: np.ndarray) -> Models:
     for model_name, model in models.models.items():
-        models.scores[model_name] = model.score(x_test, y_test)
+        models.test_scores[model_name] = model.score(x_test, y_test)
         models.residual_plots[model_name] = create_residual_plot(model, model_name, x_test, y_test)
     return models
