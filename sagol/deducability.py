@@ -1,6 +1,7 @@
 from sagol.load_data import FlattenedExperimentData, ExperimentDataAfterSplit
 from sagol.evaluate_models import Models 
 import copy
+import numpy as np
 
 def deduce_by_leave_one_roi_out(models:Models, flattened_experiment_data: ExperimentDataAfterSplit):
 #will return the score without roi1, without roi2
@@ -24,3 +25,19 @@ def zero_indexes_in_data(data, indexes_to_zero):
             data_point[ind] = 0
     return res
 
+
+def deduce_by_coefs(models: Models, first_index_of_contrast):
+    models_importances = {}
+    for name, model in models.models.items():
+        models_importances[name] = {models.flattened_vector_index_to_voxel[index]: value
+                                    for index, value in enumerate(model.coef_[:first_index_of_contrast])}
+    return models_importances
+
+
+def deduce_from_bagging_regressor(models: Models, first_index_of_contrast):
+    models_importances = {}
+    for name, model in models.models.items():
+        feature_importances = np.mean([reg.feature_importances_ for reg in model.estimators_], axis=0)
+        models_importances[name] = {models.flattened_vector_index_to_voxel[index]: value
+                                    for index, value in enumerate(feature_importances[:first_index_of_contrast])}
+    return models_importances
