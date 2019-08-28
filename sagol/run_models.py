@@ -13,7 +13,10 @@ from sagol.models.svr import train_svr
 from sagol.pre_processing import generate_subjects_ylabel, one_hot_encode_contrasts, get_one_hot_from_index
 from sagol.rois import apply_roi_masks
 from sagol.deducability import deduce_by_leave_one_roi_out
-AVAILABLE_MODELS = ['svr', 'bagging_regressor', 'nusvr']
+
+AVAILABLE_MODELS = {'svr': {'kernel': str, 'C': float, 'gamma': float},
+                    'bagging_regressor': {'n_estimators': int},
+                    'nusvr': {'kernel': str, 'C': float, 'gamma': float}}
 
 logger = logbook.Logger(__name__)
 
