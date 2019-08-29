@@ -87,16 +87,20 @@ def generate_samples_for_model(experiment_data: Union[FlattenedExperimentData, E
 
 def get_or_create_models(experiment_data: ExperimentData, tasks_and_contrasts: Optional[dict], ylabels: List[str],
                          roi_paths: Optional[List[str]], ylabel_to_weight: Optional[dict] = None,
-                         model_params: Optional[dict] = None) -> Models:
+                         model_params: Optional[dict] = None, train_only: bool = False,
+                         model_names: Optional[List[str]] = None) -> Models:
     model_params = model_params or {}
 
     pre_computed_models = get_pre_computed_models()
     if pre_computed_models:
         return pre_computed_models
     else:
-        models, experiment_data_after_split = generate_models(experiment_data, tasks_and_contrasts, ylabels,
-                                                              roi_paths, ylabel_to_weight=ylabel_to_weight,
-                                                              model_params=model_params)
+        models, data, data_3d = split_data_and_generate_models(experiment_data, tasks_and_contrasts,
+                                                               ylabels, roi_paths,
+                                                               ylabel_to_weight=ylabel_to_weight,
+                                                               model_params=model_params,
+                                                               train_only=train_only,
+                                                               model_names=model_names)
         return models
 
 
@@ -104,22 +108,36 @@ def get_pre_computed_models() -> Optional[Models]:
     return
 
 
-def generate_models(experiment_data: ExperimentData, tasks_and_contrasts: dict,
-                    ylabels: List[str], roi_paths: Optional[List[str]], ylabel_to_weight: Optional[dict] = None,
-                    model_params: Optional[dict] = None) -> (Models, ExperimentDataAfterSplit):
-    model_params = model_params or {}
-    models = {}
-    train_scores = {}
+def split_data_and_generate_models(experiment_data: ExperimentData, tasks_and_contrasts: dict,
+                                   ylabels: List[str], roi_paths: Optional[List[str]],
+                                   ylabel_to_weight: Optional[dict] = None,
+                                   model_params: Optional[dict] = None, train_only: bool = False,
+                                   model_names: Optional[List[str]] = None) -> (
+        Models, ExperimentDataAfterSplit, ExperimentDataAfterSplit3D):
+    experiment_data_after_split, experiment_data_after_split_3d = generate_experiment_data_after_split(
+        experiment_data, tasks_and_contrasts, ylabels, roi_paths, ylabel_to_weight, train_only)
 
-    experiment_data_after_split, experiment_data_roi_masked = generate_experiment_data_after_split(
-        experiment_data, tasks_and_contrasts, ylabels, roi_paths, ylabel_to_weight)
+    return generate_models(experiment_data_after_split, experiment_data_after_split_3d, ylabels, roi_paths,
+                           model_names=model_names, model_params=model_params, train_only=train_only)
+
+
+def generate_models(experiment_data_after_split: ExperimentDataAfterSplit,
+                    experiment_data_after_split_3d: ExperimentDataAfterSplit3D,
+                    ylabels: List[str], roi_paths: Optional[List[str]], model_params: Optional[dict] = None,
+                    train_only: bool = False, model_names: Optional[List[str]] = None) -> (
+        Models, ExperimentDataAfterSplit, ExperimentDataAfterSplit3D):
 
     x_train = experiment_data_after_split.x_train
     y_train = experiment_data_after_split.y_train
     x_test = experiment_data_after_split.x_test
     y_test = experiment_data_after_split.y_test
 
-    for model_name in AVAILABLE_MODELS.keys():
+    model_names = model_names or AVAILABLE_MODELS.keys()
+    model_params = model_params or {}
+    models = {}
+    train_scores = {}
+
+    for model_name in model_names:
         models[model_name] = train_model(x_train, y_train, model_name=model_name,
                                          **model_params.get(model_name, {}))
         train_score = models[model_name].score(x_train, y_train)
@@ -128,18 +146,19 @@ def generate_models(experiment_data: ExperimentData, tasks_and_contrasts: dict,
         logger.info(f'Trained {model_name} model, score on train data: {train_score}.')
 
     models = Models(ylabels=ylabels, roi_paths=roi_paths, train_scores=train_scores,
-                    shape=experiment_data_roi_masked.shape, models=models)
+                    shape=experiment_data_after_split.shape, models=models)
 
-    models = evaluate_models(models, x_test, y_test)
-    logger.info(f'Model scores: {models.test_scores}')
-    return models, experiment_data_after_split
+    if not train_only:
+        models = evaluate_models(models, x_test, y_test)
+        logger.info(f'Model scores: {models.test_scores}')
+
+    return models, experiment_data_after_split, experiment_data_after_split_3d
 
 
 def generate_experiment_data_after_split(experiment_data: ExperimentData, tasks_and_contrasts: dict,
                                          ylabels: Optional[List[str]], roi_paths: Optional[List[str]],
-                                         ylabel_to_weight: Optional[dict] = None) -> (
+                                         ylabel_to_weight: Optional[dict] = None, train_only: bool = False) -> (
         ExperimentDataAfterSplit, ExperimentDataAfterSplit3D):
-
     weights = generate_ylabel_weights(ylabels, ylabel_to_weight)
 
     experiment_data_roi_masked = apply_roi_masks(experiment_data, roi_paths)
@@ -149,8 +168,12 @@ def generate_experiment_data_after_split(experiment_data: ExperimentData, tasks_
     X_3d, Y_3d, one_hot_encoding_mapping_3d = generate_samples_for_model(experiment_data, tasks_and_contrasts,
                                                                          ylabels, weights=weights)
     # Make the same train-test split for both the flattened and 3D data.
-    x_train, x_test, y_train, y_test, train_idx, test_idx = train_test_split(X, Y, np.arange(len(X)))
-    x_train_3d, x_test_3d, _, _ = X_3d[train_idx], X_3d[test_idx], Y_3d[train_idx], Y_3d[test_idx]
+    if train_only:
+        x_train, y_train, x_test, y_test = X, Y, [], []
+        x_train_3d, x_test_3d = X_3d, []
+    else:
+        x_train, x_test, y_train, y_test, train_idx, test_idx = train_test_split(X, Y, np.arange(len(X)))
+        x_train_3d, x_test_3d, _, _ = X_3d[train_idx], X_3d[test_idx], Y_3d[train_idx], Y_3d[test_idx]
 
     experiment_data_after_split = ExperimentDataAfterSplit(
         x_train=x_train,
@@ -171,31 +194,6 @@ def generate_experiment_data_after_split(experiment_data: ExperimentData, tasks_
     )
 
     return experiment_data_after_split, experiment_data_after_split_3d
-
-
-def generate_flattened_models(model_names: List[str], experiment_data_after_split: ExperimentDataAfterSplit,
-                              ylabels: List[str],
-                              roi_paths: Optional[List[str]], shape: tuple, model_params: dict,
-                              is_train_only: Optional[bool] = False):
-    models = {}
-    for model_name in model_names:
-        if is_train_only:
-            x_train = np.concatenate(
-                (experiment_data_after_split.original_x_train, experiment_data_after_split.original_x_test))
-            y_train = np.concatenate(
-                (experiment_data_after_split.original_y_train, experiment_data_after_split.original_y_test))
-        else:
-            x_train = experiment_data_after_split.original_x_train
-            y_train = experiment_data_after_split.original_y_train
-        models[model_name] = train_model(x_train, y_train, model_name=model_name, **model_params.get(model_name, {}))
-        logger.info(f'Trained {model_name} model, score on train data: {models[model_name].score(x_train, y_train)}.')
-
-    models = Models(ylabels=ylabels, roi_paths=roi_paths, shape=shape, models=models)
-    if not is_train_only:
-        models = evaluate_models(models, experiment_data_after_split.original_x_test,
-                                 experiment_data_after_split.original_y_test)
-        logger.info(f'Model scores: {models.scores}')
-    return models
 
 
 def generate_ylabel_weights(ylabels: List[str], ylabel_to_weight: Optional[dict]) -> List[float]:
