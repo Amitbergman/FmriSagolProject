@@ -27,14 +27,14 @@ def get_rois_and_voxels_mappings() -> (dict, dict):
     global VOXEL_TO_ROIS
 
     if not ROIS_TO_VOXELS or not VOXEL_TO_ROIS:
-        logger.info('Creating ROIs-Voxel mappings.')
+        logger.info('Creating ROIs-Voxel mapping.')
         for roi_path in tqdm(get_available_rois()):
             flattened_mask = get_mask_from_roi(roi_path).flatten()
             for i, val in enumerate(flattened_mask):
                 if val != 0:
                     ROIS_TO_VOXELS[roi_path].append(i)
                     VOXEL_TO_ROIS[i].append(roi_path)
-
+        logger.info('Finished creating ROIs-Voxel mapping.')
     return ROIS_TO_VOXELS, VOXEL_TO_ROIS
 
 
@@ -54,7 +54,7 @@ def _apply_roi_mask_on_flattened_data(flattened_data: np.ndarray, voxels: List[i
     return np.array(masked_data)
 
 
-def _create_vector_index_to_model_mapping(roi_paths: Optional[str]) -> dict:
+def _create_vector_index_to_voxel_mapping(roi_paths: Optional[str]) -> dict:
     vector_index_to_voxel = {}
     if roi_paths:
         relevant_voxels = set()
@@ -72,23 +72,24 @@ def apply_roi_masks(experiment_data: ExperimentData, roi_paths: Optional[List[st
     global VOXEL_TO_ROIS
     flattened_vector_index_to_rois = {}
 
-    flattened_vector_index_to_voxel = _create_vector_index_to_model_mapping(roi_paths)
+    logger.info('Creating flattened voxel index to scan voxel mapping.')
+    flattened_vector_index_to_voxel = _create_vector_index_to_voxel_mapping(roi_paths)
     for vector_index, voxel_index in flattened_vector_index_to_voxel.items():
         flattened_vector_index_to_rois[vector_index] = [roi for roi in VOXEL_TO_ROIS.get(voxel_index, []) if
                                                         roi in roi_paths]
 
     relevant_voxels = sorted(flattened_vector_index_to_voxel.values())
+    logger.info('Finished creating flattened voxel index to scan voxel mapping.')
 
-    subjects_data = copy.deepcopy(experiment_data.subjects_data)
-
-    logger.info(f'Applying ROIs.')
-    for subject_data in tqdm(subjects_data):
+    logger.info('Applying ROIs.')
+    for subject_data in tqdm(experiment_data.subjects_data):
         for task_name, task_data in subject_data.tasks_data.items():
             for contrast_name, fmri_data in task_data.items():
                 subject_data.tasks_data[task_name][contrast_name] = _apply_roi_mask_on_flattened_data(
                     fmri_data.flatten(), voxels=relevant_voxels)
+    logger.info('Finished applying ROIs.')
 
-    return FlattenedExperimentData(subjects_data=subjects_data,
+    return FlattenedExperimentData(subjects_data=experiment_data.subjects_data,
                                    flattened_vector_index_to_voxel=flattened_vector_index_to_voxel,
                                    flattened_vector_index_to_rois=flattened_vector_index_to_rois,
                                    shape=experiment_data.shape)
