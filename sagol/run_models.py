@@ -114,8 +114,10 @@ def split_data_and_generate_models(experiment_data: ExperimentData, tasks_and_co
                                    model_params: Optional[dict] = None, train_only: bool = False,
                                    model_names: Optional[List[str]] = None) -> (
         Models, ExperimentDataAfterSplit, ExperimentDataAfterSplit3D):
+
+    weights = generate_ylabel_weights(ylabels, ylabel_to_weight)
     experiment_data_after_split, experiment_data_after_split_3d = generate_experiment_data_after_split(
-        experiment_data, tasks_and_contrasts, ylabels, roi_paths, ylabel_to_weight, train_only)
+        experiment_data, tasks_and_contrasts, ylabels, roi_paths, weights)
 
     return generate_models(experiment_data_after_split, experiment_data_after_split_3d, ylabels, roi_paths,
                            model_names=model_names, model_params=model_params, train_only=train_only)
@@ -157,9 +159,8 @@ def generate_models(experiment_data_after_split: ExperimentDataAfterSplit,
 
 def generate_experiment_data_after_split(experiment_data: ExperimentData, tasks_and_contrasts: dict,
                                          ylabels: Optional[List[str]], roi_paths: Optional[List[str]],
-                                         ylabel_to_weight: Optional[dict] = None, train_only: bool = False) -> (
+                                         weights: List[float] = None) -> (
         ExperimentDataAfterSplit, ExperimentDataAfterSplit3D):
-    weights = generate_ylabel_weights(ylabels, ylabel_to_weight)
 
     experiment_data_roi_masked = apply_roi_masks(experiment_data, roi_paths)
 
@@ -167,13 +168,10 @@ def generate_experiment_data_after_split(experiment_data: ExperimentData, tasks_
                                                                 ylabels, weights=weights)
     X_3d, Y_3d, one_hot_encoding_mapping_3d = generate_samples_for_model(experiment_data, tasks_and_contrasts,
                                                                          ylabels, weights=weights)
+    x_train, x_test, y_train, y_test, train_idx, test_idx = train_test_split(X, Y, np.arange(len(X)))
     # Make the same train-test split for both the flattened and 3D data.
-    if train_only:
-        x_train, y_train, x_test, y_test = X, Y, [], []
-        x_train_3d, x_test_3d = X_3d, []
-    else:
-        x_train, x_test, y_train, y_test, train_idx, test_idx = train_test_split(X, Y, np.arange(len(X)))
-        x_train_3d, x_test_3d, _, _ = X_3d[train_idx], X_3d[test_idx], Y_3d[train_idx], Y_3d[test_idx]
+    x_train_3d = [X_3d[ind] for ind in train_idx]
+    x_test_3d = [X_3d[ind] for ind in test_idx]
 
     experiment_data_after_split = ExperimentDataAfterSplit(
         x_train=x_train,

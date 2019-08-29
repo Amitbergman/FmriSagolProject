@@ -1,5 +1,5 @@
 from sagol.gui.globals import STATE
-from sagol.run_models import AVAILABLE_MODELS, generate_models
+from sagol.run_models import AVAILABLE_MODELS
 from sagol.run_models import generate_models
 
 
