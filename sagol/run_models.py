@@ -6,7 +6,7 @@ import torch
 from sklearn.model_selection import train_test_split
 
 from sagol.load_data import FlattenedExperimentData, ExperimentData, ExperimentDataAfterSplit
-from sagol.evaluate_models import evalute_models, Models
+from sagol.evaluate_models import evaluate_models, Models
 from sagol.models.bagging_regressor import train_bagging_regressor
 from sagol.models.nusvr import train_nusvr
 from sagol.models.svr import train_svr
@@ -128,12 +128,35 @@ def generate_models(experiment_data_roi_masked: FlattenedExperimentData, tasks_a
     original_y_train = y_train,
     original_x_test=x_test,
     original_y_test=y_test,
+    flattened_vector_index_to_voxel=experiment_data_roi_masked.flattened_vector_index_to_voxel,
     flattened_vector_index_to_rois=experiment_data_roi_masked.flattened_vector_index_to_rois,
+    shape=experiment_data_roi_masked.shape
     )
 
-    models = evalute_models(models, x_test, y_test)
+    models = evaluate_models(models, x_test, y_test)
     logger.info(f'Model scores: {models.scores}')
     return models, experiment_data_after_split
+
+
+def generate_flattened_models(model_names: List[str], experiment_data_after_split: ExperimentDataAfterSplit, ylabels: List[str],
+                              roi_paths: Optional[List[str]], shape: tuple, model_params: dict,
+                              is_train_only: Optional[bool] = False):
+    models = {}
+    for model_name in model_names:
+        if is_train_only:
+            x_train = np.concatenate((experiment_data_after_split.original_x_train, experiment_data_after_split.original_x_test))
+            y_train = np.concatenate((experiment_data_after_split.original_y_train, experiment_data_after_split.original_y_test))
+        else:
+            x_train = experiment_data_after_split.original_x_train
+            y_train = experiment_data_after_split.original_y_train
+        models[model_name] = train_model(x_train, y_train, model_name=model_name, **model_params.get(model_name, {}))
+        logger.info(f'Trained {model_name} model, score on train data: {models[model_name].score(x_train, y_train)}.')
+
+    models = Models(ylabels=ylabels, roi_paths=roi_paths, shape=shape, models=models)
+    if not is_train_only:
+        models = evaluate_models(models, experiment_data_after_split.original_x_test, experiment_data_after_split.original_y_test)
+        logger.info(f'Model scores: {models.scores}')
+    return models
 
 
 def generate_ylabel_weights(ylabels: List[str], ylabel_to_weight: Optional[dict]) -> List[float]:
