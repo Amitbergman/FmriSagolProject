@@ -9,10 +9,6 @@ import numpy as np
 import pandas as pd
 from attr import attrs, attrib
 from tqdm import tqdm
-
-from sagol.rois import apply_roi_masks
-from sagol.run_models import generate_samples_for_model
-from sklearn.model_selection import train_test_split
 import torch
 
 SUBJECT_NAME_REGEX = re.compile('sub-(\d+).*')
@@ -153,32 +149,3 @@ def create_subject_experiment_data(excel_paths: List[str], nifty_dirs: List[str]
     logger.info('Done creating subjects experiment data.')
     return ExperimentData(subjects_data=experiment_data, tasks_metadata=dict(tasks_metadata), shape=shape)
 
-
-def get_experiment_data_after_split(experiment_data: ExperimentData, roi_paths: Optional[List[str]],
-                                    tasks_and_contrasts: Optional[dict], ylabels: List[str], weights: Optional[List]):
-    flattened_data = apply_roi_masks(experiment_data, roi_paths)
-    X, y, one_hot_encoding_mapping = generate_samples_for_model(experiment_data=flattened_data,
-                                                                tasks_and_contrasts=tasks_and_contrasts,
-                                                                ylabels=ylabels, weights=weights)
-    X_3d, y_3d, one_hot_encoding_mapping_3d = generate_samples_for_model(experiment_data=experiment_data,
-                                                                         tasks_and_contrasts=tasks_and_contrasts,
-                                                                         ylabels=ylabels, weights=weights)
-    X_train, X_test, y_train, y_test, train_idx, test_idx = train_test_split(X, y, np.arange(len(X)))
-    X_3d_train, X_3d_test, y_3d_train, y_3d_test = X_3d[train_idx], X_3d[test_idx], y_3d[train_idx], y_3d[test_idx]
-    experiment_data_after_split = ExperimentDataAfterSplit(
-        original_x_train=X_train,
-        original_y_train=y_train,
-        original_x_test=X_test,
-        original_y_test=y_test,
-        flattened_vector_index_to_voxel=flattened_data.flattened_vector_index_to_voxel,
-        flattened_vector_index_to_rois=flattened_data.flattened_vector_index_to_rois,
-        shape=flattened_data.shape
-    )
-    experiment_data_after_split_3d = ExperimentDataAfterSplit3D(
-        original_x_train=X_3d_train,
-        original_y_train=y_3d_train,
-        original_x_test=X_3d_test,
-        original_y_test=y_3d_test,
-        shape=experiment_data.shape
-    )
-    return experiment_data_after_split, experiment_data_after_split_3d
