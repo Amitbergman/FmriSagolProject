@@ -4,15 +4,16 @@ import logbook
 import numpy as np
 import torch
 from sklearn.model_selection import train_test_split
+from tqdm import tqdm
 
-from sagol.load_data import FlattenedExperimentData, ExperimentData, ExperimentDataAfterSplit, ExperimentDataAfterSplit3D
 from sagol.evaluate_models import evaluate_models, Models
+from sagol.load_data import FlattenedExperimentData, ExperimentData, ExperimentDataAfterSplit, \
+    ExperimentDataAfterSplit3D
 from sagol.models.bagging_regressor import train_bagging_regressor
 from sagol.models.nusvr import train_nusvr
 from sagol.models.svr import train_svr
 from sagol.pre_processing import generate_subjects_ylabel, one_hot_encode_contrasts, get_one_hot_from_index
 from sagol.rois import apply_roi_masks
-from sagol.deducability import deduce_by_leave_one_roi_out
 
 AVAILABLE_MODELS = {'svr': {'kernel': str, 'C': float, 'gamma': float},
                     'bagging_regressor': {'n_estimators': int},
@@ -32,6 +33,7 @@ def generate_samples_for_model(experiment_data: Union[FlattenedExperimentData, E
     assert ylabels
     # Whether the fMRI data is flattened or 3D.
     is_3d = isinstance(experiment_data, ExperimentData)
+    logger.info(f'Generating samples, is_3d: {is_3d}.')
 
     tasks_and_contrasts = tasks_and_contrasts or {}
 
@@ -49,7 +51,7 @@ def generate_samples_for_model(experiment_data: Union[FlattenedExperimentData, E
     subjects_ylabel_data = generate_subjects_ylabel(experiment_data, ylabels, weights)
 
     X, Y = [], []
-    for subject_index, subject_data in enumerate(experiment_data.subjects_data):
+    for subject_index, subject_data in tqdm(enumerate(experiment_data.subjects_data)):
         for task_name, task_data in subject_data.tasks_data.items():
             if use_all_tasks or task_name in task_names:
                 use_all_contrasts = not bool(tasks_and_contrasts.get(task_name))
@@ -88,13 +90,13 @@ def get_or_create_models(experiment_data: ExperimentData, tasks_and_contrasts: O
                          model_params: Optional[dict] = None) -> Models:
     model_params = model_params or {}
 
-    masked_experiment_data = apply_roi_masks(experiment_data, roi_paths)
-
     pre_computed_models = get_pre_computed_models()
     if pre_computed_models:
         return pre_computed_models
     else:
-        models, experiment_data_after_split = generate_models(masked_experiment_data, tasks_and_contrasts, ylabels, roi_paths, ylabel_to_weight=ylabel_to_weight, model_params=model_params)
+        models, experiment_data_after_split = generate_models(experiment_data, tasks_and_contrasts, ylabels,
+                                                              roi_paths, ylabel_to_weight=ylabel_to_weight,
+                                                              model_params=model_params)
         return models
 
 
@@ -102,50 +104,86 @@ def get_pre_computed_models() -> Optional[Models]:
     return
 
 
-def generate_models(experiment_data_roi_masked: FlattenedExperimentData, tasks_and_contrasts: dict,
+def generate_models(experiment_data: ExperimentData, tasks_and_contrasts: dict,
                     ylabels: List[str], roi_paths: Optional[List[str]], ylabel_to_weight: Optional[dict] = None,
                     model_params: Optional[dict] = None) -> (Models, ExperimentDataAfterSplit):
     model_params = model_params or {}
     models = {}
+    train_scores = {}
 
-    weights = generate_ylabel_weights(ylabels, ylabel_to_weight)
+    experiment_data_after_split, experiment_data_roi_masked = generate_experiment_data_after_split(
+        experiment_data, tasks_and_contrasts, ylabels, roi_paths, ylabel_to_weight)
 
-    X, Y, one_hot_encoding_mapping = generate_samples_for_model(experiment_data_roi_masked, tasks_and_contrasts,
-                                                                ylabels, weights=weights)
-    x_train, x_test, y_train, y_test = train_test_split(X, Y)
+    x_train = experiment_data_after_split.x_train
+    y_train = experiment_data_after_split.y_train
+    x_test = experiment_data_after_split.x_test
+    y_test = experiment_data_after_split.y_test
 
-    for model_name in AVAILABLE_MODELS:
+    for model_name in AVAILABLE_MODELS.keys():
         models[model_name] = train_model(x_train, y_train, model_name=model_name,
                                          **model_params.get(model_name, {}))
-        logger.info(f'Trained {model_name} model, score on train data: {models[model_name].score(x_train, y_train)}.')
+        train_score = models[model_name].score(x_train, y_train)
+        train_scores[model_name] = train_score
 
-    models = Models(ylabels=ylabels, roi_paths=roi_paths,
+        logger.info(f'Trained {model_name} model, score on train data: {train_score}.')
+
+    models = Models(ylabels=ylabels, roi_paths=roi_paths, train_scores=train_scores,
                     shape=experiment_data_roi_masked.shape, models=models)
 
-
-    experiment_data_after_split = ExperimentDataAfterSplit(
-    original_x_train=x_train,
-    original_y_train = y_train,
-    original_x_test=x_test,
-    original_y_test=y_test,
-    flattened_vector_index_to_voxel=experiment_data_roi_masked.flattened_vector_index_to_voxel,
-    flattened_vector_index_to_rois=experiment_data_roi_masked.flattened_vector_index_to_rois,
-    shape=experiment_data_roi_masked.shape
-    )
-
     models = evaluate_models(models, x_test, y_test)
-    logger.info(f'Model scores: {models.scores}')
+    logger.info(f'Model scores: {models.test_scores}')
     return models, experiment_data_after_split
 
 
-def generate_flattened_models(model_names: List[str], experiment_data_after_split: ExperimentDataAfterSplit, ylabels: List[str],
+def generate_experiment_data_after_split(experiment_data: ExperimentData, tasks_and_contrasts: dict,
+                                         ylabels: Optional[List[str]], roi_paths: Optional[List[str]],
+                                         ylabel_to_weight: Optional[dict] = None) -> (
+        ExperimentDataAfterSplit, ExperimentDataAfterSplit3D):
+
+    weights = generate_ylabel_weights(ylabels, ylabel_to_weight)
+
+    experiment_data_roi_masked = apply_roi_masks(experiment_data, roi_paths)
+
+    X, Y, one_hot_encoding_mapping = generate_samples_for_model(experiment_data_roi_masked, tasks_and_contrasts,
+                                                                ylabels, weights=weights)
+    X_3d, Y_3d, one_hot_encoding_mapping_3d = generate_samples_for_model(experiment_data, tasks_and_contrasts,
+                                                                         ylabels, weights=weights)
+    # Make the same train-test split for both the flattened and 3D data.
+    x_train, x_test, y_train, y_test, train_idx, test_idx = train_test_split(X, Y, np.arange(len(X)))
+    x_train_3d, x_test_3d, _, _ = X_3d[train_idx], X_3d[test_idx], Y_3d[train_idx], Y_3d[test_idx]
+
+    experiment_data_after_split = ExperimentDataAfterSplit(
+        x_train=x_train,
+        y_train=y_train,
+        x_test=x_test,
+        y_test=y_test,
+        flattened_vector_index_to_voxel=experiment_data_roi_masked.flattened_vector_index_to_voxel,
+        flattened_vector_index_to_rois=experiment_data_roi_masked.flattened_vector_index_to_rois,
+        shape=experiment_data_roi_masked.shape
+    )
+
+    experiment_data_after_split_3d = ExperimentDataAfterSplit3D(
+        x_train=x_train_3d,
+        y_train=y_train,
+        x_test=x_test_3d,
+        y_test=y_test,
+        shape=experiment_data_roi_masked.shape
+    )
+
+    return experiment_data_after_split, experiment_data_after_split_3d
+
+
+def generate_flattened_models(model_names: List[str], experiment_data_after_split: ExperimentDataAfterSplit,
+                              ylabels: List[str],
                               roi_paths: Optional[List[str]], shape: tuple, model_params: dict,
                               is_train_only: Optional[bool] = False):
     models = {}
     for model_name in model_names:
         if is_train_only:
-            x_train = np.concatenate((experiment_data_after_split.original_x_train, experiment_data_after_split.original_x_test))
-            y_train = np.concatenate((experiment_data_after_split.original_y_train, experiment_data_after_split.original_y_test))
+            x_train = np.concatenate(
+                (experiment_data_after_split.original_x_train, experiment_data_after_split.original_x_test))
+            y_train = np.concatenate(
+                (experiment_data_after_split.original_y_train, experiment_data_after_split.original_y_test))
         else:
             x_train = experiment_data_after_split.original_x_train
             y_train = experiment_data_after_split.original_y_train
@@ -154,7 +192,8 @@ def generate_flattened_models(model_names: List[str], experiment_data_after_spli
 
     models = Models(ylabels=ylabels, roi_paths=roi_paths, shape=shape, models=models)
     if not is_train_only:
-        models = evaluate_models(models, experiment_data_after_split.original_x_test, experiment_data_after_split.original_y_test)
+        models = evaluate_models(models, experiment_data_after_split.original_x_test,
+                                 experiment_data_after_split.original_y_test)
         logger.info(f'Model scores: {models.scores}')
     return models
 
@@ -181,33 +220,3 @@ def train_model(x_train: np.ndarray, y_train: np.ndarray, model_name: str, **kwa
         return train_nusvr(x_train, y_train, **kwargs)
     else:
         raise NotImplementedError(f'Model: {model_name} is not supported.')
-
-
-def get_experiment_data_after_split(experiment_data: ExperimentData, roi_paths: Optional[List[str]],
-                                    tasks_and_contrasts: Optional[dict], ylabels: List[str], weights: Optional[List]):
-    flattened_data = apply_roi_masks(experiment_data, roi_paths)
-    X, y, one_hot_encoding_mapping = generate_samples_for_model(experiment_data=flattened_data,
-                                                                tasks_and_contrasts=tasks_and_contrasts,
-                                                                ylabels=ylabels, weights=weights)
-    X_3d, y_3d, one_hot_encoding_mapping_3d = generate_samples_for_model(experiment_data=experiment_data,
-                                                                         tasks_and_contrasts=tasks_and_contrasts,
-                                                                         ylabels=ylabels, weights=weights)
-    X_train, X_test, y_train, y_test, train_idx, test_idx = train_test_split(X, y, np.arange(len(X)))
-    X_3d_train, X_3d_test, y_3d_train, y_3d_test = X_3d[train_idx], X_3d[test_idx], y_3d[train_idx], y_3d[test_idx]
-    experiment_data_after_split = ExperimentDataAfterSplit(
-        original_x_train=X_train,
-        original_y_train=y_train,
-        original_x_test=X_test,
-        original_y_test=y_test,
-        flattened_vector_index_to_voxel=flattened_data.flattened_vector_index_to_voxel,
-        flattened_vector_index_to_rois=flattened_data.flattened_vector_index_to_rois,
-        shape=flattened_data.shape
-    )
-    experiment_data_after_split_3d = ExperimentDataAfterSplit3D(
-        original_x_train=X_3d_train,
-        original_y_train=y_3d_train,
-        original_x_test=X_3d_test,
-        original_y_test=y_3d_test,
-        shape=experiment_data.shape
-    )
-    return experiment_data_after_split, experiment_data_after_split_3d

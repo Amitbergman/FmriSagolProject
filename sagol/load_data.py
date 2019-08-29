@@ -48,23 +48,25 @@ class FlattenedExperimentData:
     flattened_vector_index_to_rois: dict = attrib()
     # (x, y, z)
     shape: tuple = attrib()
-        
+
+
 @attrs
 class ExperimentDataAfterSplit:
-    original_x_test: np.ndarray = attrib()
-    original_x_train: np.ndarray = attrib()
-    original_y_train: np.ndarray = attrib()
-    original_y_test: np.ndarray = attrib()
+    x_test: np.ndarray = attrib()
+    x_train: np.ndarray = attrib()
+    y_train: np.ndarray = attrib()
+    y_test: np.ndarray = attrib()
     flattened_vector_index_to_voxel: dict = attrib()
     flattened_vector_index_to_rois: dict = attrib()
     shape: tuple = attrib()
 
+
 @attrs
 class ExperimentDataAfterSplit3D:
-    original_x_test: torch.Tensor = attrib()
-    original_x_train: torch.Tensor = attrib()
-    original_y_train: torch.Tensor = attrib()
-    original_y_test: torch.Tensor = attrib()
+    x_test: torch.Tensor = attrib()
+    x_train: torch.Tensor = attrib()
+    y_train: torch.Tensor = attrib()
+    y_test: torch.Tensor = attrib()
     shape: tuple = attrib()
 
 
@@ -148,4 +150,3 @@ def create_subject_experiment_data(excel_paths: List[str], nifty_dirs: List[str]
 
     logger.info('Done creating subjects experiment data.')
     return ExperimentData(subjects_data=experiment_data, tasks_metadata=dict(tasks_metadata), shape=shape)
-
