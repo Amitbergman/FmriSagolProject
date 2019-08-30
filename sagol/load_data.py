@@ -1,7 +1,7 @@
 import os
 import re
 from collections import defaultdict
-from typing import List, Optional
+from typing import Union, List, Optional
 
 import logbook
 import nibabel as nib
@@ -63,11 +63,21 @@ class ExperimentDataAfterSplit:
 
 @attrs
 class ExperimentDataAfterSplit3D:
-    x_test: torch.Tensor = attrib()
-    x_train: torch.Tensor = attrib()
-    y_train: torch.Tensor = attrib()
-    y_test: torch.Tensor = attrib()
+    x_test = attrib()
+    x_train = attrib()
+    y_train = attrib()
+    y_test = attrib()
     shape: tuple = attrib()
+
+
+def combine_train_and_test_data(exp_data: Union[ExperimentDataAfterSplit, ExperimentDataAfterSplit3D]):
+    exp_data.x_train = np.concatenate((exp_data.x_train, exp_data.x_test))
+    exp_data.y_train = np.concatenate((exp_data.y_train, exp_data.y_test))
+
+
+def update_test_data(exp_data: Union[ExperimentDataAfterSplit, ExperimentDataAfterSplit3D], X_test, y_test):
+    exp_data.x_test = X_test
+    exp_data.y_test = y_test
 
 
 def convert_nifty_to_image_array(path: str) -> np.array:

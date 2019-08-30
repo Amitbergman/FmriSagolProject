@@ -21,8 +21,8 @@ logger = logbook.Logger(__name__)
 
 
 def generate_samples_for_model(experiment_data: Union[FlattenedExperimentData, ExperimentData],
-                               tasks_and_contrasts: Optional[dict], ylabels: List[str],
-                               weights: Optional[List] = None) -> (np.ndarray, np.ndarray, dict):
+                               tasks_and_contrasts: dict, ylabels: List[str],
+                               weights: Optional[List] = None, contrast_mapping: Optional[dict] = None) -> (np.ndarray, np.ndarray, dict):
     """
     :param tasks_and_contrasts: A dictionary of {<task_name>: [<contrast_name>, <contrast_name2>]}
     Pass `None` to fetch all tasks and all contrasts. Pass None/[] inside a `task_name` to fetch all contrast for
@@ -37,8 +37,8 @@ def generate_samples_for_model(experiment_data: Union[FlattenedExperimentData, E
 
     # We need to differentiate images of the same brain "cut" belonging to different contrast.
     # To do so, we use one hot encoding of the task + contrast combination.
-    contrast_hot_encoding_mapping = {}
-    current_contrast_index = 0
+    contrast_hot_encoding_mapping = contrast_mapping or {}
+    current_contrast_index = 0 if contrast_mapping is None else len(contrast_mapping)
 
     use_all_tasks = not bool(tasks_and_contrasts)
     if use_all_tasks:
@@ -55,8 +55,9 @@ def generate_samples_for_model(experiment_data: Union[FlattenedExperimentData, E
                 use_all_contrasts = not bool(tasks_and_contrasts.get(task_name))
 
                 for contrast_name, fmri_data in task_data.items():
-                    if use_all_contrasts or contrast_name in tasks_and_contrasts.get(task_name, []):
-                        task_contrast_name = f'{task_name}.{contrast_name}'
+                    task_contrast_name = f'{task_name}.{contrast_name}'
+                    if (use_all_contrasts or contrast_name in tasks_and_contrasts.get(task_name, [])) and \
+                            (contrast_mapping is None or task_contrast_name in contrast_mapping):
                         if task_contrast_name not in contrast_hot_encoding_mapping:
                             contrast_hot_encoding_mapping[task_contrast_name] = current_contrast_index
                             current_contrast_index += 1
@@ -83,7 +84,7 @@ def generate_samples_for_model(experiment_data: Union[FlattenedExperimentData, E
     return X, Y, one_hot_encoding_mapping
 
 
-def get_or_create_models(experiment_data: ExperimentData, tasks_and_contrasts: Optional[dict], ylabels: List[str],
+def get_or_create_models(experiment_data: ExperimentData, tasks_and_contrasts, ylabels: List[str],
                          roi_paths: Optional[List[str]], ylabel_to_weight: Optional[dict] = None,
                          model_params: Optional[dict] = None, train_only: bool = False,
                          model_names: Optional[List[str]] = None) -> Models:
@@ -114,15 +115,16 @@ def split_data_and_generate_models(experiment_data: ExperimentData, tasks_and_co
         Models, ExperimentDataAfterSplit, ExperimentDataAfterSplit3D):
 
     weights = generate_ylabel_weights(ylabels, ylabel_to_weight)
-    experiment_data_after_split, experiment_data_after_split_3d = generate_experiment_data_after_split(
+    experiment_data_after_split, experiment_data_after_split_3d, reverse_contrast_mapping = generate_experiment_data_after_split(
         experiment_data, tasks_and_contrasts, ylabels, roi_paths, weights)
 
-    return generate_models(experiment_data_after_split, experiment_data_after_split_3d, ylabels, roi_paths,
+    return generate_models(experiment_data_after_split, experiment_data_after_split_3d,
+                           reverse_contrast_mapping=reverse_contrast_mapping, ylabels=ylabels, roi_paths=roi_paths,
                            model_names=model_names, model_params=model_params, train_only=train_only)
 
 
 def generate_models(experiment_data_after_split: ExperimentDataAfterSplit,
-                    experiment_data_after_split_3d: ExperimentDataAfterSplit3D,
+                    experiment_data_after_split_3d: ExperimentDataAfterSplit3D, reverse_contrast_mapping: dict,
                     ylabels: List[str], roi_paths: Optional[List[str]], model_params: Optional[dict] = None,
                     train_only: bool = False, model_names: Optional[List[str]] = None) -> (
         Models, ExperimentDataAfterSplit, ExperimentDataAfterSplit3D):
@@ -153,6 +155,7 @@ def generate_models(experiment_data_after_split: ExperimentDataAfterSplit,
         logger.info(f'Trained {model_name} model, score on train data: {train_score}.')
 
     models = Models(ylabels=ylabels, roi_paths=roi_paths, train_scores=train_scores,
+                    reverse_contrast_mapping=reverse_contrast_mapping,
                     shape=experiment_data_after_split.shape, models=models, parameters=parameters)
 
     if not train_only:
@@ -162,17 +165,26 @@ def generate_models(experiment_data_after_split: ExperimentDataAfterSplit,
     return models, experiment_data_after_split, experiment_data_after_split_3d
 
 
+def apply_roi_masks_and_generate_samples_for_model(experiment_data: ExperimentData, tasks_and_contrasts: dict,
+                                         ylabels: Optional[List[str]], roi_paths: Optional[List[str]],
+                                         weights: Optional[List[float]] = None, contrast_mapping: Optional[dict] = None):
+    experiment_data_roi_masked = apply_roi_masks(experiment_data, roi_paths)
+
+    X, Y, reverse_contrast_mapping = generate_samples_for_model(experiment_data_roi_masked, tasks_and_contrasts, ylabels,
+                                                                weights=weights, contrast_mapping=contrast_mapping)
+    X_3d, Y_3d, reverse_contrast_mapping_3d = generate_samples_for_model(experiment_data, tasks_and_contrasts, ylabels,
+                                                                         weights=weights, contrast_mapping=contrast_mapping)
+    return experiment_data_roi_masked, X, Y, X_3d, Y_3d, reverse_contrast_mapping
+
 def generate_experiment_data_after_split(experiment_data: ExperimentData, tasks_and_contrasts: dict,
                                          ylabels: Optional[List[str]], roi_paths: Optional[List[str]],
                                          weights: List[float] = None) -> (
         ExperimentDataAfterSplit, ExperimentDataAfterSplit3D):
 
-    experiment_data_roi_masked = apply_roi_masks(experiment_data, roi_paths)
-
-    X, Y, one_hot_encoding_mapping = generate_samples_for_model(experiment_data_roi_masked, tasks_and_contrasts,
-                                                                ylabels, weights=weights)
-    X_3d, Y_3d, one_hot_encoding_mapping_3d = generate_samples_for_model(experiment_data, tasks_and_contrasts,
-                                                                         ylabels, weights=weights)
+    experiment_data_roi_masked, X, Y, X_3d, Y_3d, reverse_contrast_mapping = \
+        apply_roi_masks_and_generate_samples_for_model(experiment_data=experiment_data,
+                                                       tasks_and_contrasts=tasks_and_contrasts,
+                                                       ylabels=ylabels, roi_paths=roi_paths, weights=weights)
     x_train, x_test, y_train, y_test, train_idx, test_idx = train_test_split(X, Y, np.arange(len(X)))
     # Make the same train-test split for both the flattened and 3D data.
     x_train_3d = [X_3d[ind] for ind in train_idx]
@@ -196,7 +208,7 @@ def generate_experiment_data_after_split(experiment_data: ExperimentData, tasks_
         shape=experiment_data_roi_masked.shape
     )
 
-    return experiment_data_after_split, experiment_data_after_split_3d
+    return experiment_data_after_split, experiment_data_after_split_3d, reverse_contrast_mapping
 
 
 def generate_ylabel_weights(ylabels: List[str], ylabel_to_weight: Optional[dict]) -> List[float]:

@@ -44,8 +44,8 @@ def get_one_hot_from_index(index, size):
 
 
 def one_hot_encode_contrasts(X: np.ndarray) -> np.ndarray:
-    # Reshaping to get a matrix like numpy array is necessary for the one hot encoding ahead
-    X = X.reshape(len(X), len(X[0]))
+    if len(X) == 0:
+        return X
     # Assuming the contrast feature is the last feature of X.
     contrast_data = X[:, -1:]
 

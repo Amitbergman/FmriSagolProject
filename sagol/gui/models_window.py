@@ -3,11 +3,13 @@ from tkinter import ttk
 from sagol.gui.globals import STATE
 from sagol.load_data import create_subject_experiment_data
 from sagol.run_models import generate_experiment_data_after_split
-from sagol.models.utils import AVAILABLE_MODELS
+from sagol.models.utils import AVAILABLE_MODELS, is_valid_param
 from sagol.evaluate_models import Models
 from sagol.rois import get_available_rois
 from sagol.gui.classes import UntrainedModels
+from sagol.gui.utils import load_test_data
 
+INVALID_PARAM_MESSAGE = "At least one of the parameters is invalid"
 
 # א to be removed
 def create_data_and_models():
@@ -16,13 +18,14 @@ def create_data_and_models():
         ["C:/Users/Liorzlo/FmriSagolProject/data/Doors_2ndLev"])
     STATE['trained_models'] = Models(ylabels=['FPES', 'SPIN'], roi_paths=get_available_rois(), shape=(85,101,65))
     STATE['tasks_and_contrasts'] = None
-    STATE['weights'] = [0.6, 0.4]
+    STATE['weights'] = [0.3, 0.7]
     STATE['is_load'] = False
 
 
 def prepare_data():
     trained_models = STATE['trained_models']
-    STATE['experiment_data_after_split'], STATE['experiment_data_after_split_3d'] = generate_experiment_data_after_split(
+    STATE['experiment_data_after_split'], STATE['experiment_data_after_split_3d'], STATE['reverse_contrast_mapping'] =\
+        generate_experiment_data_after_split(
         experiment_data=STATE['experiment_data'], roi_paths=trained_models.roi_paths,
         tasks_and_contrasts=STATE['tasks_and_contrasts'], ylabels=trained_models.ylabels, weights=STATE['weights'])
 
@@ -36,9 +39,12 @@ class ModelsWindow:
         self.results_frames = {}
         self.params_valid = {model_name: {} for model_name in AVAILABLE_MODELS}
         self.trained_lately = set()
+        self.test_data_loaded_lately = set([model_name for model_name in AVAILABLE_MODELS])
         self.tab_clicked_funcs = {}
         self.button_funcs = {model_name: {} for model_name in AVAILABLE_MODELS}
         self.clicked_button = None
+        self.times_test_data_loaded = 0 if STATE['is_load'] else 1
+        self.test_score_labels = {}
 
     def update_trained_lately(self, model_names):
         for name in model_names:
@@ -49,7 +55,7 @@ class ModelsWindow:
     # 'sagol.evaluate_models.Models'. The attributes 'ylabels', 'roi_paths' and 'shape' must be populated,
     # even if no model was trained yet!
     # STATE['experiment_data'] should be populated by an object of the class 'sagol.load_data.ExperimentData',
-    # which represent the data that the user chose in the former window.
+    # which represent the data that the user chose in the former window, or by None if STATE['is_load'] == True.
     # STATE['tasks_and_contrasts'] should be populated correctly
     # STATE['weights'] should be populated should be populated correctly
     # Lastly, STATE['is_load'] should be True iif the user chose to load existing models in the former window.
@@ -60,7 +66,9 @@ class ModelsWindow:
 
         info_frame = ttk.Frame(window)
         info_frame.pack(expand=True)
-        y_labels_lbl = tk.Label(info_frame, text='y labels: ' + ', '.join(STATE['trained_models'].ylabels))
+        y_labels_lbl = tk.Label(info_frame, text='y labels: ' + ' + '.join(
+            [str(STATE['weights'][i]) + '*' + y for
+             i, y in enumerate(STATE['trained_models'].ylabels)]))
         y_labels_lbl.pack(expand=True)
         rois_lbl = tk.Label(info_frame, text='ROIs: ' + ', '.join(STATE['trained_models'].roi_paths))
         rois_lbl.pack(expand=True)
@@ -79,9 +87,9 @@ class ModelsWindow:
             def populate_params_frame(parent, params):
                 choose_params_lbl = tk.Label(parent, text='Choose parameters:')
                 choose_params_lbl.grid(column=0, row=0)
-                for i, (p, t_v) in enumerate(params.items()):
+                for i, (p, v) in enumerate(params.items()):
 
-                    def create_param_comp(parent, i, p, t, v):
+                    def create_param_comp(parent, i, p, v):
                         self.params_valid[name][p] = True
                         param_lbl = tk.Label(parent, text=p + ': ')
                         param_lbl.grid(column=0, row=i + 1)
@@ -89,35 +97,21 @@ class ModelsWindow:
 
                         def update_param():
                             val = param_entry.get()
-                            if val == '':
-                                STATE['untrained_models'].models[name].parameters[p][1] = ''
-                                return_val = True
-                            elif t == str:
-                                try:
-                                    float(val)
-                                    return_val = False
-                                except ValueError:
-                                    STATE['untrained_models'].models[name].parameters[p][1] = val
-                                    return_val = True
-                            else:
-                                try:
-                                    converted_val = t(val)
-                                    STATE['untrained_models'].models[name].parameters[p][1] = converted_val
-                                    return_val = True
-                                except ValueError:
-                                    return_val = False
-                            self.params_valid[name][p] = return_val
-                            param_entry.config(bg = 'white' if return_val else 'red')
+                            is_valid, value = is_valid_param(name, p, val)
+                            if is_valid:
+                                STATE['untrained_models'].models[name].parameters[p] = value
+                            self.params_valid[name][p] = is_valid
+                            param_entry.config(bg='white' if is_valid else 'red')
                             if self.clicked_button is not None:
                                 self.button_funcs[name][self.clicked_button]()
                                 self.clicked_button = None
-                            return return_val
+                            return is_valid
 
                         param_entry.config(validatecommand=update_param)
                         param_entry.insert(tk.END, v)
                         param_entry.grid(column=1, row=i + 1)
 
-                    create_param_comp(parent, i, p, t_v[0], t_v[1])
+                    create_param_comp(parent, i, p, v)
 
             populate_params_frame(params_frame, untrained_model.parameters)
 
@@ -146,17 +140,56 @@ class ModelsWindow:
                 test_score_lbl = tk.Label(results_frame,
                                           text='Test score: ' + str(STATE['trained_models'].get_test_score(name)))
                 test_score_lbl.grid(column=2, row=2)
+                self.test_score_labels[name] = test_score_lbl
+
+                if self.times_test_data_loaded == 0:
+                    test_data_loaded_lbl = tk.Label(results_frame, text='')
+                else:
+                    test_data_loaded_lbl = tk.Label(results_frame,
+                                                    text='Test data presents (' + str(self.times_test_data_loaded) + ')')
+                test_data_loaded_lbl.grid(column=2, row=4)
+
+                def load_test_data_clicked():
+                    excel_paths = tk.filedialog.askopenfilenames(initialdir="/", title="Select excels",
+                                                filetypes=(
+                                                    ("Excel Files", "*.xls*"), ("Comma Separated Files", "*.csv"),
+                                                    ("All files", "*.*")))
+                    nifty_dir = tk.filedialog.askdirectory(initialdir="/", title="Select test data directory")
+                    if load_test_data(excel_paths, nifty_dir, True if self.times_test_data_loaded == 0 else False):
+                        self.times_test_data_loaded += 1
+                        test_data_loaded_lbl['text'] = 'Test data presents (' + str(self.times_test_data_loaded) + ')'
+                        self.test_data_loaded_lately.clear()
+                        self.test_data_loaded_lately.add(name)
+                    else:
+                        tk.messagebox.showinfo("Error", 'There is not even one matching task and contrast between ' +
+                                                        'loaded test data and original training data')
+
 
                 def test_clicked():
-                    return
+                    if self.times_test_data_loaded == 0:
+                        load_test_data_clicked()
+                    untrained_model = STATE['untrained_models'].models[name]
+                    data = STATE['experiment_data_after_split_3d'] if untrained_model.is_3d else STATE[
+                        'experiment_data_after_split']
+                    self.test_score_labels[name]['text'] = STATE['trained_models'].test(name, data.x_test, data.y_test)
 
                 def open_deducability():
                     return
 
+                def save_clicked():
+                    return
+
+                load_test_btn = tk.Button(results_frame, text='Load test data', command=load_test_data_clicked)
+                load_test_btn.grid(column=1, row=3)
+
                 test_btn = tk.Button(results_frame, text='Test', command=test_clicked)
-                test_btn.grid(column=1, row=3)
+                test_btn.grid(column=2, row=3)
+
                 deducability_btn = tk.Button(results_frame, text='Deducability', command=open_deducability)
-                deducability_btn.grid(column=2, row=3)
+                deducability_btn.grid(column=3, row=3)
+
+                save_btn = tk.Button(results_frame, text='Save model', command=save_clicked)
+                save_btn.grid(column=2, row=5)
 
             def update_results():
                 if name in self.results_frames:
@@ -172,7 +205,7 @@ class ModelsWindow:
             # Buttons
             def train_clicked():
                 if not check_params():
-                    tk.messagebox.showinfo("Error", "At least one of the parameters is illegal")
+                    tk.messagebox.showinfo("Error", INVALID_PARAM_MESSAGE)
                     return
                 STATE['untrained_models'].generate_models([name], True)
                 self.update_trained_lately([name])
@@ -180,7 +213,7 @@ class ModelsWindow:
 
             def train_test_clicked():
                 if not check_params():
-                    tk.messagebox.showinfo("Error", "At least one of the parameters is illegal")
+                    tk.messagebox.showinfo("Error", INVALID_PARAM_MESSAGE)
                     return
                 STATE['untrained_models'].generate_models([name], False)
                 self.update_trained_lately([name])
@@ -206,6 +239,10 @@ class ModelsWindow:
                 if name in self.trained_lately:
                     update_results()
                     self.trained_lately.remove(name)
+                    self.test_data_loaded_lately.add(name)
+                if name not in self.test_data_loaded_lately:
+                    self.test_score_labels[name]['text'] = 'Test data presents (' + str(self.times_test_data_loaded) + ')'
+                    self.test_data_loaded_lately.add(name)
 
             self.tab_clicked_funcs[parent.index(tab)] = tab_clicked
 

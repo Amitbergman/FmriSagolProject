@@ -22,6 +22,8 @@ class Models:
     residual_plots: dict = attrib(default={})
     # {'svr': dict{str:value}, 'bagging_regressor': dict{str:value}}
     parameters: dict = attrib(default={})
+    # {0: 'Hariri_2ndLev_AngryVsNeu', 1: 'Hariri_2ndLev_AngryVsShapes'}
+    reverse_contrast_mapping = attrib(default={})
 
     def set_models(self, trained_models):
         self.ylabels = trained_models.ylabels
@@ -40,6 +42,11 @@ class Models:
                 if name in self.residual_plots:
                     del self.residual_plots[name]
             self.parameters[name] = trained_models.parameters[name]
+
+    def test(self, model_name, X_test, y_test):
+        score = self.models[model_name].score(X_test, y_test)
+        self.test_scores[model_name] = score
+        return score
 
     def get_train_score(self, model_name):
         return self.train_scores[model_name] if model_name in self.train_scores else None
