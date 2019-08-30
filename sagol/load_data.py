@@ -9,7 +9,6 @@ import numpy as np
 import pandas as pd
 from attr import attrs, attrib
 from tqdm import tqdm
-import torch
 
 SUBJECT_NAME_REGEX = re.compile('sub-(\d+).*')
 

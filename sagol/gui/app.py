@@ -10,5 +10,3 @@ MAIN_WINDOW.pack()
 load_initial_window(MAIN_WINDOW)
 
 root.mainloop()
-
-
