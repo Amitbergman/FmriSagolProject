@@ -48,23 +48,25 @@ class FlattenedExperimentData:
     flattened_vector_index_to_rois: dict = attrib()
     # (x, y, z)
     shape: tuple = attrib()
-        
+
+
 @attrs
 class ExperimentDataAfterSplit:
-    original_x_test: np.ndarray = attrib()
-    original_x_train: np.ndarray = attrib()
-    original_y_train: np.ndarray = attrib()
-    original_y_test: np.ndarray = attrib()
+    x_test: np.ndarray = attrib()
+    x_train: np.ndarray = attrib()
+    y_train: np.ndarray = attrib()
+    y_test: np.ndarray = attrib()
     flattened_vector_index_to_voxel: dict = attrib()
     flattened_vector_index_to_rois: dict = attrib()
     shape: tuple = attrib()
 
+
 @attrs
 class ExperimentDataAfterSplit3D:
-    original_x_test: torch.Tensor = attrib()
-    original_x_train: torch.Tensor = attrib()
-    original_y_train: torch.Tensor = attrib()
-    original_y_test: torch.Tensor = attrib()
+    x_test: torch.Tensor = attrib()
+    x_train: torch.Tensor = attrib()
+    y_train: torch.Tensor = attrib()
+    y_test: torch.Tensor = attrib()
     shape: tuple = attrib()
 
 
@@ -114,6 +116,7 @@ def create_subject_experiment_data(excel_paths: List[str], nifty_dirs: List[str]
     features_df = features_df.where((pd.notnull(features_df)), None)
     logger.info('Done loading excel data.')
 
+    shape = None
     # Extract fMRI data
     for nifty_dir in nifty_dirs:
         task_name = os.path.basename(nifty_dir)
@@ -125,7 +128,10 @@ def create_subject_experiment_data(excel_paths: List[str], nifty_dirs: List[str]
             for fname in sorted(filter(lambda f: f.endswith('.nii'), os.listdir(contrast_folder))):
                 pth = os.path.join(contrast_folder, fname)
                 subject_num = int(SUBJECT_NAME_REGEX.findall(os.path.basename(pth))[0])
-                tasks_data[subject_num][task_name][contrast_name] = convert_nifty_to_image_array(pth)
+                fmri_data = convert_nifty_to_image_array(pth)
+                tasks_data[subject_num][task_name][contrast_name] = fmri_data
+                # Assuming all scans were done using the same scanning option and have the same shape.
+                shape = fmri_data.shape
     logger.info('Done loading fMRI data.')
 
     logger.info('Merging subjects data.')
@@ -141,11 +147,5 @@ def create_subject_experiment_data(excel_paths: List[str], nifty_dirs: List[str]
 
         ))
 
-    # Assuming all scans were done using the same scanning option and have the same shape
-    example_subject_data = tasks_data[subjects[0]]
-    example_tasks_data = example_subject_data[list(example_subject_data.keys())[0]]
-    shape = example_tasks_data[list(example_tasks_data.keys())[0]].shape
-
     logger.info('Done creating subjects experiment data.')
     return ExperimentData(subjects_data=experiment_data, tasks_metadata=dict(tasks_metadata), shape=shape)
-
