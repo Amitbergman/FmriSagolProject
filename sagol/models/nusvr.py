@@ -7,7 +7,7 @@ from sagol.models.utils import get_model_params
 logger = logbook.Logger(__name__)
 
 
-def train_nusvr(x_train: np.ndarray, y_train: np.ndarray, **kwargs) -> NuSVR:
+def train_nusvr(x_train: np.ndarray, y_train: np.ndarray, **kwargs) -> (NuSVR, dict):
     mdl = NuSVR(**kwargs)
     mdl.degree = 2
 

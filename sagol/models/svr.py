@@ -7,8 +7,8 @@ from sagol.models.utils import get_model_params
 logger = logbook.Logger(__name__)
 
 
-def train_svr(x_train: np.ndarray, y_train: np.ndarray, **kwargs) -> SVR:
-    mdl = SVR(verbose=False, **kwargs)
+def train_svr(x_train: np.ndarray, y_train: np.ndarray, **kwargs) -> (SVR, dict):
+    mdl = SVR(**kwargs)
     mdl.degree = 2
 
     should_grid_search = False
