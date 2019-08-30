@@ -13,7 +13,7 @@ logger = logbook.Logger(__name__)
 
 @ignore_warnings(category=ConvergenceWarning)
 def train_lasso(x_train: np.ndarray, y_train: np.ndarray, **kwargs) -> (Lasso, dict):
-    mdl = Lasso()
+    mdl = Lasso(**kwargs)
 
     should_grid_search = False
     param_grid = {}
