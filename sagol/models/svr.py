@@ -32,5 +32,6 @@ def train_svr(x_train: np.ndarray, y_train: np.ndarray, **kwargs) -> (SVR, dict)
         gs = GridSearchCV(estimator=mdl, param_grid=param_grid)
         gs.fit(x_train, y_train)
         mdl = gs.best_estimator_
+
     mdl.fit(x_train, y_train)
     return mdl, get_model_params(model_name='svr', model=mdl)

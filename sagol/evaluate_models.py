@@ -1,11 +1,9 @@
-import json
-import os
 import pickle
 from typing import List, Optional
 
 import logbook
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
 from attr import attrs, attrib
 from matplotlib.figure import Figure
 
