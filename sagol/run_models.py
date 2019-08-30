@@ -14,10 +14,8 @@ from sagol.models.nusvr import train_nusvr
 from sagol.models.svr import train_svr
 from sagol.pre_processing import generate_subjects_ylabel, one_hot_encode_contrasts, get_one_hot_from_index
 from sagol.rois import apply_roi_masks
+from sagol.models.utils import AVAILABLE_MODELS
 
-AVAILABLE_MODELS = {'svr': {'kernel': str, 'C': float, 'gamma': float},
-                    'bagging_regressor': {'n_estimators': int},
-                    'nusvr': {'kernel': str, 'C': float, 'gamma': float}}
 
 logger = logbook.Logger(__name__)
 
@@ -129,30 +127,37 @@ def generate_models(experiment_data_after_split: ExperimentDataAfterSplit,
                     train_only: bool = False, model_names: Optional[List[str]] = None) -> (
         Models, ExperimentDataAfterSplit, ExperimentDataAfterSplit3D):
 
-    x_train = experiment_data_after_split.x_train
-    y_train = experiment_data_after_split.y_train
-    x_test = experiment_data_after_split.x_test
-    y_test = experiment_data_after_split.y_test
+    if train_only:
+        x_train = np.concatenate((experiment_data_after_split.x_train, experiment_data_after_split.x_test))
+        y_train = np.concatenate((experiment_data_after_split.y_train, experiment_data_after_split.y_test))
+        x_test = None
+        y_test = None
+    else:
+        x_train = experiment_data_after_split.x_train
+        y_train = experiment_data_after_split.y_train
+        x_test = experiment_data_after_split.x_test
+        y_test = experiment_data_after_split.y_test
 
     model_names = model_names or AVAILABLE_MODELS.keys()
     model_params = model_params or {}
     models = {}
+    parameters = {}
     train_scores = {}
 
     for model_name in model_names:
-        models[model_name] = train_model(x_train, y_train, model_name=model_name,
-                                         **model_params.get(model_name, {}))
+        models[model_name], parameters[model_name] = train_model(x_train, y_train, model_name=model_name,
+                                                                 **model_params.get(model_name, {}))
         train_score = models[model_name].score(x_train, y_train)
         train_scores[model_name] = train_score
 
         logger.info(f'Trained {model_name} model, score on train data: {train_score}.')
 
     models = Models(ylabels=ylabels, roi_paths=roi_paths, train_scores=train_scores,
-                    shape=experiment_data_after_split.shape, models=models)
+                    shape=experiment_data_after_split.shape, models=models, parameters=parameters)
 
     if not train_only:
         models = evaluate_models(models, x_test, y_test)
-        logger.info(f'Model scores: {models.test_scores}')
+        logger.info(f'Model test scores: {models.test_scores}')
 
     return models, experiment_data_after_split, experiment_data_after_split_3d
 

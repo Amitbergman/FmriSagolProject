@@ -1,14 +1,15 @@
 import logbook
 import numpy as np
 from sklearn.model_selection import GridSearchCV
-
 from sklearn.svm import SVR
+from sagol.models.utils import get_model_params
 
 logger = logbook.Logger(__name__)
 
 
 def train_svr(x_train: np.ndarray, y_train: np.ndarray, **kwargs) -> SVR:
-    mdl = SVR(verbose=True, **kwargs)
+    mdl = SVR(verbose=False, **kwargs)
+    mdl.degree = 2
 
     should_grid_search = False
     param_grid = {}
@@ -32,4 +33,4 @@ def train_svr(x_train: np.ndarray, y_train: np.ndarray, **kwargs) -> SVR:
         gs.fit(x_train, y_train)
         mdl = gs.best_estimator_
     mdl.fit(x_train, y_train)
-    return mdl
+    return mdl, get_model_params(model_name='svr', model=mdl)

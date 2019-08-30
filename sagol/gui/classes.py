@@ -1,5 +1,5 @@
 from sagol.gui.globals import STATE
-from sagol.run_models import AVAILABLE_MODELS
+from sagol.models.utils import AVAILABLE_MODELS
 from sagol.run_models import generate_models
 
 
@@ -23,7 +23,7 @@ class UntrainedModels:
         trained_models = STATE['trained_models']
         ylabels = trained_models.ylabels
         roi_paths = trained_models.roi_paths
-        model_params = {self.models[name]: {param: self.models[name].parameters[param] for
+        model_params = {name: {param: self.models[name].parameters[param][1] for
                                             param in self.models[name].parameters} for name in model_names}
         trained_models, _, _ = generate_models(model_names=model_names, experiment_data_after_split=data,
                                                experiment_data_after_split_3d=data_3d, ylabels=ylabels,

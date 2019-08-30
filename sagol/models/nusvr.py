@@ -1,14 +1,15 @@
 from sklearn.svm import NuSVR
 import numpy as np
 import logbook
-
 from sklearn.model_selection import GridSearchCV
+from sagol.models.utils import get_model_params
 
 logger = logbook.Logger(__name__)
 
 
 def train_nusvr(x_train: np.ndarray, y_train: np.ndarray, **kwargs) -> NuSVR:
     mdl = NuSVR(**kwargs)
+    mdl.degree = 2
 
     should_grid_search = False
     param_grid = {}
@@ -32,4 +33,4 @@ def train_nusvr(x_train: np.ndarray, y_train: np.ndarray, **kwargs) -> NuSVR:
         gs.fit(x_train, y_train)
         mdl = gs.best_estimator_
     mdl.fit(x_train, y_train)
-    return mdl
+    return mdl, get_model_params(model_name='nusvr', model=mdl)
