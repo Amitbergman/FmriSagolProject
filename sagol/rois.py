@@ -1,4 +1,3 @@
-import copy
 import os
 from collections import defaultdict
 from pathlib import Path
@@ -67,13 +66,17 @@ def _create_vector_index_to_voxel_mapping(roi_paths: Optional[str]) -> dict:
 
 
 def apply_roi_masks(experiment_data: ExperimentData, roi_paths: Optional[List[str]]) -> FlattenedExperimentData:
+    """
+    Applies ROI masking on fMRI tasks data in order to reduce data dimensionality.
+    """
     roi_paths = roi_paths or get_available_rois()
 
-    global VOXEL_TO_ROIS
     flattened_vector_index_to_rois = {}
 
     logger.info('Creating flattened voxel index to scan voxel mapping.')
     flattened_vector_index_to_voxel = _create_vector_index_to_voxel_mapping(roi_paths)
+
+    global VOXEL_TO_ROIS
     for vector_index, voxel_index in flattened_vector_index_to_voxel.items():
         flattened_vector_index_to_rois[vector_index] = [roi for roi in VOXEL_TO_ROIS.get(voxel_index, []) if
                                                         roi in roi_paths]

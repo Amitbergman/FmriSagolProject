@@ -1,22 +1,27 @@
 from sagol.load_data import FlattenedExperimentData, ExperimentDataAfterSplit
-from sagol.evaluate_models import Models 
+from sagol.evaluate_models import Models
 import copy
 import numpy as np
 
-def deduce_by_leave_one_roi_out(models:Models, flattened_experiment_data: ExperimentDataAfterSplit):
-#will return the score without roi1, without roi2
+
+def deduce_by_leave_one_roi_out(models: Models, flattened_experiment_data: ExperimentDataAfterSplit):
+    # will return the score without roi1, without roi2
     for model_name, model in models.models.items():
-        score_on_all_rois = model.score(flattened_experiment_data.original_x_test, flattened_experiment_data.original_y_test)
+        score_on_all_rois = model.score(flattened_experiment_data.x_test,
+                                        flattened_experiment_data.y_test)
         print(f"score on all rois for current model is {score_on_all_rois}")
         for roi_path in models.roi_paths:
             list_of_indexes = get_indexes_of_roi(roi_path, flattened_experiment_data.flattened_vector_index_to_rois)
-            current_x_train = zero_indexes_in_data(flattened_experiment_data.original_x_train, list_of_indexes)
-            current_x_test = zero_indexes_in_data(flattened_experiment_data.original_x_test, list_of_indexes)
-            model.fit(current_x_train, flattened_experiment_data.original_y_train)
-            print(f"score in model {model_name} without roi {roi_path} is {model.score(current_x_test, flattened_experiment_data.original_y_test)}")     
+            current_x_train = zero_indexes_in_data(flattened_experiment_data.x_train, list_of_indexes)
+            current_x_test = zero_indexes_in_data(flattened_experiment_data.x_test, list_of_indexes)
+            model.fit(current_x_train, flattened_experiment_data.y_train)
+            print(
+                f"score in model {model_name} without roi {roi_path} is {model.score(current_x_test, flattened_experiment_data.y_test)}")
+
 
 def get_indexes_of_roi(roi_path, d):
-    return [k for k,v in d.items() if roi_path in v]
+    return [k for k, v in d.items() if roi_path in v]
+
 
 def zero_indexes_in_data(data, indexes_to_zero):
     res = copy.copy(data)

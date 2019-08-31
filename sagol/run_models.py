@@ -48,6 +48,7 @@ def generate_samples_for_model(experiment_data: Union[FlattenedExperimentData, E
 
     subjects_ylabel_data = generate_subjects_ylabel(experiment_data, ylabels, weights)
 
+    # Generate the data in its final form.
     X, Y = [], []
     for subject_index, subject_data in enumerate(experiment_data.subjects_data):
         for task_name, task_data in subject_data.tasks_data.items():
@@ -116,7 +117,6 @@ def split_data_and_generate_models(experiment_data: ExperimentData, tasks_and_co
     weights = generate_ylabel_weights(ylabels, ylabel_to_weight)
     experiment_data_after_split, experiment_data_after_split_3d, reverse_contrast_mapping = generate_experiment_data_after_split(
         experiment_data, tasks_and_contrasts, ylabels, roi_paths, weights)
-
     return generate_models(experiment_data_after_split, experiment_data_after_split_3d,
                            reverse_contrast_mapping=reverse_contrast_mapping, ylabels=ylabels, roi_paths=roi_paths,
                            model_names=model_names, model_params=model_params, train_only=train_only)
@@ -187,6 +187,7 @@ def generate_experiment_data_after_split(experiment_data: ExperimentData, tasks_
         apply_roi_masks_and_generate_samples_for_model(experiment_data=experiment_data,
                                                        tasks_and_contrasts=tasks_and_contrasts,
                                                        ylabels=ylabels, roi_paths=roi_paths, weights=weights)
+
     x_train, x_test, y_train, y_test, train_idx, test_idx = train_test_split(X, Y, np.arange(len(X)))
     # Make the same train-test split for both the flattened and 3D data.
     x_train_3d = [X_3d[ind] for ind in train_idx]
