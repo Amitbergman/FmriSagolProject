@@ -3,12 +3,6 @@ from sagol.load_data import create_subject_experiment_data, ExperimentDataAfterS
 from sagol.gui.globals import STATE
 from sagol.run_models import apply_roi_masks_and_generate_samples_for_model
 
-
-def clear_frame(frame):
-    for child in frame.winfo_children():
-        child.destroy()
-
-
 def load_test_data(excel_paths, nifty_dir, combine_train_and_test=True):
     test_experiment_data = create_subject_experiment_data(excel_paths, [nifty_dir])
     trained_models = STATE['trained_models']
