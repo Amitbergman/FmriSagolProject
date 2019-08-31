@@ -1,11 +1,19 @@
 import os
+import time
 import tkinter as tk
 from tkinter import filedialog
 
 from sagol.gui.globals import STATE
 from sagol.load_data import create_subject_experiment_data
 from sagol.rois import get_available_rois, apply_roi_masks
-from sagol.run_models import generate_experiment_data_after_split, generate_ylabel_weights
+
+from multiprocessing.pool import ThreadPool
+
+
+def _create_subject_experiment_data_async(excel_paths, nifty_dirs, btn_text):
+    btn_text.set('Loading data...')
+    STATE['experiment_data'] = create_subject_experiment_data(excel_paths, nifty_dirs)
+    btn_text.set('Loaded data!')
 
 
 def load_initial_window(parent):
@@ -29,20 +37,18 @@ def on_root_button_click(parent):
 
 def on_load_data_click(parent, contrasts_selector, btn_text):
     selected_task_names = [contrasts_selector.get(idx) for idx in contrasts_selector.curselection()]
-    btn_text.set('Loading data...')
+    nifty_dirs = [os.path.join(STATE['root_dir'], task) for task in selected_task_names]
 
-
-    STATE['experiment_data'] = create_subject_experiment_data(
-        excel_paths=STATE['excel_paths'],
-        nifty_dirs=[os.path.join(STATE['root_dir'], task) for task in selected_task_names])
-
-    btn_text.set('Loaded data successfully!')
+    pool = ThreadPool(processes=1)
+    async_task = pool.apply_async(_create_subject_experiment_data_async, (STATE['excel_paths'], nifty_dirs, btn_text))
+    while not async_task.ready():
+        time.sleep(0.1)
 
     roi_selector = display_roi_selector(parent)
 
     choose_roi_button = tk.Button(parent,
-                                 text="Choose ROIs",
-                                 command=lambda: on_choose_roi_click(parent, roi_selector))
+                                  text="Choose ROIs",
+                                  command=lambda: on_choose_roi_click(parent, roi_selector))
     choose_roi_button.pack(side=tk.LEFT)
 
 
@@ -51,8 +57,6 @@ def on_choose_roi_click(parent, roi_selector):
     STATE['roi_paths'] = roi_paths
 
     ylabels_selector = display_ylabel_selector(parent)
-
-
 
 
 def open_excel_selector(parent):
@@ -98,7 +102,7 @@ def create_load_data_button(parent, contrasts_selector):
 
 def display_roi_selector(parent):
     available_rois = get_available_rois()
-    roi_selector = tk.Listbox(parent, selectmode=tk.MULTIPLE, width=max(len(roi)for roi in available_rois))
+    roi_selector = tk.Listbox(parent, selectmode=tk.MULTIPLE, width=max(len(roi) for roi in available_rois))
 
     for roi in get_available_rois():
         roi_selector.insert(tk.END, roi)
@@ -108,7 +112,8 @@ def display_roi_selector(parent):
 
 def display_ylabel_selector(parent):
     available_ylabels = STATE['experiment_data'].available_ylabels
-    y_label_selector = tk.Listbox(parent, selectmode=tk.MULTIPLE, width=max(len(ylabel)for ylabel in available_ylabels))
+    y_label_selector = tk.Listbox(parent, selectmode=tk.MULTIPLE,
+                                  width=max(len(ylabel) for ylabel in available_ylabels))
 
     for ylabel in available_ylabels:
         y_label_selector.insert(tk.END, ylabel)
@@ -126,4 +131,3 @@ def on_choose_ylabel_click(parent, ylabels_selector):
 
     STATE['flattened_experiment_data'] = apply_roi_masks(STATE['experiment_data'], STATE['roi_paths'])
     print(STATE['flattened_experiment_data'].shape)
-
