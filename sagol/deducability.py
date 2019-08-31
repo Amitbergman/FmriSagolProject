@@ -2,7 +2,8 @@ from sagol.load_data import FlattenedExperimentData, ExperimentDataAfterSplit
 from sagol.evaluate_models import Models
 import copy
 import numpy as np
-
+import nibabel as nib
+from nilearn import plotting
 
 def deduce_by_leave_one_roi_out(models: Models, flattened_experiment_data: ExperimentDataAfterSplit):
     # will return the score without roi1, without roi2
@@ -46,3 +47,10 @@ def deduce_from_bagging_regressor(models: Models, first_index_of_contrast):
         models_importances[name] = {models.flattened_vector_index_to_voxel[index]: value
                                     for index, value in enumerate(feature_importances[:first_index_of_contrast])}
     return models_importances
+
+def plot_brain_image_from_nifty(nifty_path):
+    data = nib.load(nifty_path)
+
+    plotting.plot_roi(data,
+                      title="plot_roi")
+    plotting.show()
