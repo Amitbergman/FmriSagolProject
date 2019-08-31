@@ -99,7 +99,9 @@ class Models:
     def test(self, model_name, X_test, y_test):
         score = self.models[model_name].score(X_test, y_test)
         self.test_scores[model_name] = score
-        return score
+        fig = create_residual_plot(self.models[model_name], model_name, X_test, y_test)
+        self.residual_plots[model_name] = fig
+        return score, fig
 
     def get_train_score(self, model_name, as_str=False):
         if model_name in self.train_scores:
@@ -115,7 +117,7 @@ class Models:
 
 
 def create_residual_plot(model, model_name: str, x_test: np.array, y_test: np.array) -> Figure:
-    fig = plt.figure()
+    fig = plt.figure(figsize=(4,3))
     plt.xlabel('True', figure=fig)
     plt.ylabel('Predicted', figure=fig)
     plt.title(f'Model: {model_name} - True VS Predicted, optimal is aligned with red line', figure=fig)

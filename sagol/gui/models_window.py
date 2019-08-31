@@ -9,12 +9,13 @@ from sagol.rois import get_available_rois
 from sagol.gui.classes import UntrainedModels
 from sagol.gui.utils import load_test_data
 import os
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
 INVALID_PARAM_MESSAGE = "At least one of the parameters is invalid"
 
 # א to be removed
 def create_data_and_models():
-    STATE['is_load'] = True
+    STATE['is_load'] = False
 
     if STATE['is_load']:
         STATE['trained_models'] = Models()
@@ -51,6 +52,7 @@ class ModelsWindow:
         self.clicked_button = None
         self.times_test_data_loaded = 0 if STATE['is_load'] else 1
         self.test_score_labels = {}
+        self.res_plot_canvases = {}
 
     def update_trained_lately(self, model_names):
         for name in model_names:
@@ -74,7 +76,7 @@ class ModelsWindow:
     # Lastly, STATE['is_load'] should be True iif the user chose to load existing models in the former window.
     def open_models_window(self):
         window = tk.Tk()
-        window.geometry('800x400')
+        window.geometry('1000x650')
         window.title("Models")
 
         info_frame = ttk.Frame(window)
@@ -128,7 +130,11 @@ class ModelsWindow:
                                                              ("Excel Files", "*.xls*"),
                                                              ("Comma Separated Files", "*.csv"),
                                                              ("All files", "*.*")))
+            if excel_paths is None or excel_paths == '':
+                return
             nifty_dir = tk.filedialog.askdirectory(initialdir="/", title="Select test data directory")
+            if nifty_dir is None or nifty_dir == '':
+                return
             if load_test_data(excel_paths, nifty_dir, True if self.times_test_data_loaded == 0 else False):
                 self.times_test_data_loaded += 1
                 load_test_general_lbl['text'] = 'Test data presents (' + str(self.times_test_data_loaded) + ')'
@@ -177,9 +183,6 @@ class ModelsWindow:
                                 STATE['untrained_models'].models[name].parameters[p] = value
                             self.params_valid[name][p] = is_valid
                             param_entry.config(bg='white' if is_valid else 'red')
-                            if self.clicked_button is not None:
-                                self.button_funcs[name][self.clicked_button]()
-                                self.clicked_button = None
                             return is_valid
 
                         param_entry.config(validatecommand=update_param)
@@ -193,6 +196,14 @@ class ModelsWindow:
             def button_clicked(button):
                 self.clicked_button = button['text']
                 button.focus_set()
+
+            def draw_res_plot(res_plot, results_frame):
+                if name in self.res_plot_canvases:
+                    self.res_plot_canvases[name].get_tk_widget().destroy()
+                res_plot_canvas = FigureCanvasTkAgg(res_plot, master=results_frame)
+                res_plot_canvas.get_tk_widget().grid(column=2, row=5)
+                res_plot_canvas.draw()
+                self.res_plot_canvases[name] = res_plot_canvas
 
             # Train & test frame
             def create_results_frame():
@@ -227,7 +238,11 @@ class ModelsWindow:
                                                 filetypes=(
                                                     ("Excel Files", "*.xls*"), ("Comma Separated Files", "*.csv"),
                                                     ("All files", "*.*")))
+                    if excel_paths is None or excel_paths == '':
+                        return
                     nifty_dir = tk.filedialog.askdirectory(initialdir="/", title="Select test data directory")
+                    if nifty_dir is None or nifty_dir == '':
+                        return
                     if load_test_data(excel_paths, nifty_dir, True if self.times_test_data_loaded == 0 else False):
                         self.times_test_data_loaded += 1
                         test_data_loaded_lbl['text'] = 'Test data presents (' + str(self.times_test_data_loaded) + ')'
@@ -241,13 +256,17 @@ class ModelsWindow:
                     untrained_model = STATE['untrained_models'].models[name]
                     data = STATE['experiment_data_after_split_3d'] if untrained_model.is_3d else STATE[
                         'experiment_data_after_split']
-                    self.test_score_labels[name]['text'] = STATE['trained_models'].test(name, data.x_test, data.y_test)
+                    test_score, res_plot = STATE['trained_models'].test(name, data.x_test, data.y_test)
+                    self.test_score_labels[name]['text'] = test_score
+                    draw_res_plot(res_plot, results_frame)
 
                 def open_deducability():
                     return
 
                 def save_clicked():
                     file_path = tk.filedialog.asksaveasfile(initialdir="/", title="Save model", mode=tk.W)
+                    if file_path is None or file_path == '':
+                        return
                     STATE['trained_models'].save_model(model_name=name, file_path=file_path.name)
 
                 load_test_btn = tk.Button(results_frame, text='Load test data', command=load_test_data_clicked)
@@ -259,8 +278,11 @@ class ModelsWindow:
                 deducability_btn = tk.Button(results_frame, text='Deducability', command=open_deducability)
                 deducability_btn.grid(column=3, row=3)
 
+                if name in STATE['trained_models'].residual_plots:
+                    draw_res_plot(STATE['trained_models'].residual_plots[name], results_frame)
+
                 save_btn = tk.Button(results_frame, text='Save model', command=save_clicked)
-                save_btn.grid(column=2, row=5)
+                save_btn.grid(column=2, row=6)
 
             def update_results():
                 if name in self.results_frames:
@@ -285,12 +307,19 @@ class ModelsWindow:
             def train_test_clicked():
                 train_or_train_test_clicked(False)
 
+            def btn_focus(event):
+                if self.clicked_button is not None:
+                    self.button_funcs[name][self.clicked_button]()
+                    self.clicked_button = None
+
             train_frame = ttk.Frame(tab)
             train_frame.grid(column=0, row=1)
             train_btn = tk.Button(train_frame, text='Train', command=lambda: button_clicked(train_btn))
+            train_btn.bind("<FocusIn>", btn_focus)
             self.button_funcs[name][train_btn['text']] = train_clicked
             train_btn.grid(column=0, row=0, padx=(0, 100))
             train_test_btn = tk.Button(train_frame, text='Train & test', command=lambda: button_clicked(train_test_btn))
+            train_test_btn.bind("<FocusIn>", btn_focus)
             self.button_funcs[name][train_test_btn['text']] = train_test_clicked
             train_test_btn.grid(column=2, row=0)
 

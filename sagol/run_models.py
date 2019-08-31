@@ -153,8 +153,8 @@ def generate_models(experiment_data_after_split: ExperimentDataAfterSplit,
 
         logger.info(f'Trained {model_name} model, score on train data: {train_score}.')
 
-    models = Models(ylabels=ylabels, roi_paths=roi_paths, train_scores=train_scores,
-                    reverse_contrast_mapping=reverse_contrast_mapping,
+    models = Models(ylabels=ylabels, roi_paths=roi_paths, train_scores=train_scores, test_scores={},
+                    reverse_contrast_mapping=reverse_contrast_mapping, residual_plots={},
                     shape=experiment_data_after_split.shape, models=models, parameters=parameters)
 
     if not train_only:
