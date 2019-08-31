@@ -2,9 +2,11 @@ import os
 import tkinter as tk
 from tkinter import filedialog
 
+from sagol.evaluate_models import Models
 from sagol.gui.globals import STATE
+from sagol.gui.models_window import ModelsWindow
 from sagol.load_data import create_subject_experiment_data
-from sagol.rois import get_available_rois, apply_roi_masks
+from sagol.rois import get_available_rois
 
 
 def load_initial_window(parent):
@@ -120,4 +122,13 @@ def display_ylabel_selector(parent):
 def on_choose_ylabel_click(parent, ylabels_selector):
     selected_ylabels = [ylabels_selector.get(idx) for idx in ylabels_selector.curselection()]
     STATE['ylabels'] = selected_ylabels
-    STATE['flattened_experiment_data'] = apply_roi_masks(STATE['experiment_data'], STATE['roi_paths'])
+    # STATE['flattened_experiment_data'] = apply_roi_masks(STATE['experiment_data'], STATE['roi_paths'])
+    STATE['is_load'] = False
+    x = Models()
+    STATE['trained_models'] = Models(ylabels=STATE['ylabels'],
+                                     roi_paths=STATE['roi_paths'],
+                                     shape=STATE['experiment_data'].shape)
+    STATE['tasks_and_contrasts'] = STATE['experiment_data'].tasks_metadata
+    STATE['weights'] = [1 / len(STATE['ylabels']) for i in range(len(STATE['ylabels']))]
+    model_window = ModelsWindow()
+    model_window.open_models_window()
