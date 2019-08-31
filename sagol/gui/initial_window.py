@@ -4,7 +4,7 @@ from tkinter import filedialog
 
 from sagol.gui.globals import STATE
 from sagol.load_data import create_subject_experiment_data
-from sagol.rois import get_available_rois
+from sagol.rois import get_available_rois, apply_roi_masks
 from sagol.run_models import generate_experiment_data_after_split, generate_ylabel_weights
 
 
@@ -117,6 +117,7 @@ def display_ylabel_selector(parent):
 def on_choose_ylabel_click(parent, ylabels_selector):
     selected_ylabels = [ylabels_selector.get(idx) for idx in ylabels_selector.curselection()]
     STATE['ylabels'] = selected_ylabels
-    print(STATE['ylabels'])
-    print(STATE['roi_paths'])
+
+    STATE['flattened_experiment_data'] = apply_roi_masks(STATE['experiment_data'], STATE['roi_paths'])
+    print(STATE['flattened_experiment_data'].shape)
 
