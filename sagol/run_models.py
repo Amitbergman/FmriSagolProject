@@ -173,6 +173,7 @@ def apply_roi_masks_and_generate_samples_for_model(experiment_data: ExperimentDa
     X, Y, reverse_contrast_mapping = generate_samples_for_model(experiment_data_roi_masked, tasks_and_contrasts,
                                                                 ylabels, weights=weights,
                                                                 contrast_mapping=contrast_mapping)
+
     X_3d, Y_3d, reverse_contrast_mapping_3d = generate_samples_for_model(experiment_data, tasks_and_contrasts, ylabels,
                                                                          weights=weights,
                                                                          contrast_mapping=contrast_mapping)
