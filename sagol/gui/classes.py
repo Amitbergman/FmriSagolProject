@@ -7,11 +7,7 @@ class UntrainedModel:
     def __init__(self, name):
         self.name = name
         self.is_3d = name in AVAILABLE_3D_MODELS
-        if name in STATE['trained_models'].models:
-            self.parameters = {param: [AVAILABLE_MODELS[name][param], v] for
-                               param, v in STATE['trained_models'].parameters[name].items()}
-        else:
-            self.parameters = {param: '' for param in AVAILABLE_MODELS[name]}
+        self.parameters = {param: '' for param in AVAILABLE_MODELS[name]}
 
 
 class UntrainedModels:
@@ -22,7 +18,7 @@ class UntrainedModels:
         data = STATE['experiment_data_after_split']
         data_3d = STATE['experiment_data_after_split_3d']
         trained_models = STATE['trained_models']
-        reverse_contrast_mapping = STATE['reverse_contrast_mapping']
+        reverse_contrast_mapping = trained_models.reverse_contrast_mapping
         ylabels = trained_models.ylabels
         roi_paths = trained_models.roi_paths
         model_params = {}

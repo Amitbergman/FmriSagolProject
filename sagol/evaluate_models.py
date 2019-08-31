@@ -12,10 +12,10 @@ logger = logbook.Logger(__name__)
 
 @attrs
 class Models:
-    ylabels: List[str] = attrib()
-    roi_paths: Optional[List[str]] = attrib()
+    ylabels: List[str] = attrib(default=None)
+    roi_paths: Optional[List[str]] = attrib(default=None)
     # (x, y, z)
-    shape: tuple = attrib()
+    shape: tuple = attrib(default=None)
     # {'svr' : <model>, 'bagging_regressor': <model>}
     models: dict = attrib(default={})
     # {'svr' : 0.52, 'bagging_regressor': 0.48}
@@ -41,7 +41,9 @@ class Models:
             'ylabels': self.ylabels,
             'roi_paths': self.roi_paths,
             'shape': self.shape,
-            'reverse_contrast_mapping': self.reverse_contrast_mapping
+            'reverse_contrast_mapping': self.reverse_contrast_mapping,
+            'train_score': self.train_scores[model_name],
+            'parameters': self.parameters[model_name]
         }
         model_with_metadata = {**metadata, **{'model': self.models[model_name]}}
 
@@ -53,12 +55,14 @@ class Models:
         with open(model_file_path, 'rb') as model_file:
             model_with_metadata = pickle.loads(model_file.read())
 
-        roi_paths = model_with_metadata['roi_paths']
         ylabels = model_with_metadata['ylabels']
+        roi_paths = model_with_metadata['roi_paths']
         shape = model_with_metadata['shape']
         reverse_contrast_mapping = model_with_metadata['reverse_contrast_mapping']
-        assert not self.roi_paths or set(roi_paths) == set(self.roi_paths), 'ROIs of the loaded model do not match.'
+        train_score = model_with_metadata['train_score']
+        parameters = model_with_metadata['parameters']
         assert not self.ylabels or set(ylabels) == set(self.ylabels), 'ylabels of the loaded model do not match.'
+        assert not self.roi_paths or set(roi_paths) == set(self.roi_paths), 'ROIs of the loaded model do not match.'
         assert not self.shape or shape == self.shape, 'ylabels of the loaded model do not match.'
         assert not self.reverse_contrast_mapping or reverse_contrast_mapping == self.reverse_contrast_mapping,\
             'Contrast selection do not match.'
@@ -67,9 +71,12 @@ class Models:
         assert model_name not in self.models or force, f'Model {model_name} already exists. Use `force` to override.'
 
         self.models[model_name] = model_with_metadata['model']
+        self.ylabels = ylabels
         self.roi_paths = roi_paths
         self.shape = shape
         self.reverse_contrast_mapping = reverse_contrast_mapping
+        self.train_scores[model_name] = train_score
+        self.parameters[model_name] = parameters
 
     def set_models(self, trained_models):
         self.ylabels = trained_models.ylabels
@@ -94,11 +101,17 @@ class Models:
         self.test_scores[model_name] = score
         return score
 
-    def get_train_score(self, model_name):
-        return self.train_scores[model_name] if model_name in self.train_scores else None
+    def get_train_score(self, model_name, as_str=False):
+        if model_name in self.train_scores:
+            return '%.2f' % self.train_scores[model_name] if as_str else self.train_scores[model_name]
+        else:
+            return '' if as_str else None
 
-    def get_test_score(self, model_name):
-        return self.test_scores[model_name] if model_name in self.test_scores else None
+    def get_test_score(self, model_name, as_str=False):
+        if model_name in self.test_scores:
+            return '%.2f' % self.test_scores[model_name] if as_str else self.test_scores[model_name]
+        else:
+            return '' if as_str else None
 
 
 def create_residual_plot(model, model_name: str, x_test: np.array, y_test: np.array) -> Figure:
