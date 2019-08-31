@@ -15,13 +15,14 @@ def generate_subjects_ylabel(experiment_data: Union[FlattenedExperimentData, Exp
     weights = weights or None
 
     # In case there are multiple ylabels, we don't know whether they are using the same scale.
-    # Therefore, we normalize to [0, 1]
+    # Therefore, we perform data normalization.
     if len(ylabels) > 1:
-        logger.info('More than 1 ylabel was passed, performing 0-1 normalization on the labels.')
         y_data = [[subject.features_data[ylabel] for ylabel in ylabels] for subject in experiment_data.subjects_data]
         if normalization == 'z-score':
+            logger.info('More than 1 ylabel was passed, performing zscore normalization on the labels.')
             scaler = StandardScaler()
         elif normalization == 'zero-one':
+            logger.info('More than 1 ylabel was passed, performing 0-1 normalization on the labels.')
             scaler = MinMaxScaler()
         else:
             raise NotImplementedError('Only `z-score` and `zero-one` normalizations are supported.')

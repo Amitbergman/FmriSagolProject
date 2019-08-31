@@ -1,7 +1,7 @@
 import os
 import re
 from collections import defaultdict
-from typing import Union, List, Optional
+from typing import Union, List
 
 import logbook
 import nibabel as nib
@@ -17,19 +17,27 @@ logger = logbook.Logger(__name__)
 
 @attrs
 class SubjectExperimentData:
+    """
+    Holds all experiment data relevant to the given `subject_id`
+    """
     subject_id: int = attrib()
     # Subject general data (e.g Age) and scores on questionnaires (e.g FPES).
     features_data: dict = attrib()
     # fMRI data for each task and contrast.
+    # {'Hariri_2ndLev': {'FacesVsNew': <np.array>}}
     tasks_data: dict = attrib()
 
 
 @attrs
 class ExperimentData:
+    """
+    Holds all experiment data after transforming fMRI data to numpy arrays, before any further processing.
+    """
     subjects_data: List[SubjectExperimentData] = attrib()
     # (x, y, z)
     shape: tuple = attrib()
     # Holds the available contrasts for each task.
+    # {'Hariri_2ndLev' : ['FacesVsNew', 'AngryVsNew']}
     tasks_metadata: dict = attrib()
 
     @property
@@ -40,9 +48,10 @@ class ExperimentData:
 @attrs
 class FlattenedExperimentData:
     subjects_data: List[SubjectExperimentData] = attrib()
+    # Contains a mapping between the flattened vector after dimensionality reduction to the voxel in the original image.
     # {0: 1762, 1: 1763, 2: 1764 ..., 25: 16584}
     flattened_vector_index_to_voxel: dict = attrib()
-    # Same as `flattened_vector_index_to_voxel`, but allows tracking back the relevant ROIs.
+    # Same as `flattened_vector_index_to_voxel`, but allows tracking back the relevant ROIs for deductibility,
     flattened_vector_index_to_rois: dict = attrib()
     # (x, y, z)
     shape: tuple = attrib()

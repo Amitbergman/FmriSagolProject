@@ -39,7 +39,6 @@ def prepare_data():
 
 class ModelsWindow:
     def __init__(self):
-        create_data_and_models()
         STATE['untrained_models'] = UntrainedModels()
         if not STATE['is_load']:
             prepare_data()
