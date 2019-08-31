@@ -4,7 +4,6 @@ import logbook
 import numpy as np
 import torch
 from sklearn.model_selection import train_test_split
-from tqdm import tqdm
 
 from sagol.evaluate_models import evaluate_models, Models
 from sagol.load_data import FlattenedExperimentData, ExperimentData, ExperimentDataAfterSplit, \
@@ -13,17 +12,17 @@ from sagol.models.bagging_regressor import train_bagging_regressor
 from sagol.models.lasso import train_lasso
 from sagol.models.nusvr import train_nusvr
 from sagol.models.svr import train_svr
+from sagol.models.utils import AVAILABLE_MODELS
 from sagol.pre_processing import generate_subjects_ylabel, one_hot_encode_contrasts, get_one_hot_from_index
 from sagol.rois import apply_roi_masks
-from sagol.models.utils import AVAILABLE_MODELS
-
 
 logger = logbook.Logger(__name__)
 
 
 def generate_samples_for_model(experiment_data: Union[FlattenedExperimentData, ExperimentData],
                                tasks_and_contrasts: dict, ylabels: List[str],
-                               weights: Optional[List] = None, contrast_mapping: Optional[dict] = None) -> (np.ndarray, np.ndarray, dict):
+                               weights: Optional[List] = None, contrast_mapping: Optional[dict] = None) -> (
+        np.ndarray, np.ndarray, dict):
     """
     :param tasks_and_contrasts: A dictionary of {<task_name>: [<contrast_name>, <contrast_name2>]}
     Pass `None` to fetch all tasks and all contrasts. Pass None/[] inside a `task_name` to fetch all contrast for
@@ -114,7 +113,6 @@ def split_data_and_generate_models(experiment_data: ExperimentData, tasks_and_co
                                    model_params: Optional[dict] = None, train_only: bool = False,
                                    model_names: Optional[List[str]] = None) -> (
         Models, ExperimentDataAfterSplit, ExperimentDataAfterSplit3D):
-
     weights = generate_ylabel_weights(ylabels, ylabel_to_weight)
     experiment_data_after_split, experiment_data_after_split_3d, reverse_contrast_mapping = generate_experiment_data_after_split(
         experiment_data, tasks_and_contrasts, ylabels, roi_paths, weights)
@@ -129,7 +127,6 @@ def generate_models(experiment_data_after_split: ExperimentDataAfterSplit,
                     ylabels: List[str], roi_paths: Optional[List[str]], model_params: Optional[dict] = None,
                     train_only: bool = False, model_names: Optional[List[str]] = None) -> (
         Models, ExperimentDataAfterSplit, ExperimentDataAfterSplit3D):
-
     if train_only:
         x_train = np.concatenate((experiment_data_after_split.x_train, experiment_data_after_split.x_test))
         y_train = np.concatenate((experiment_data_after_split.y_train, experiment_data_after_split.y_test))
@@ -168,21 +165,24 @@ def generate_models(experiment_data_after_split: ExperimentDataAfterSplit,
 
 
 def apply_roi_masks_and_generate_samples_for_model(experiment_data: ExperimentData, tasks_and_contrasts: dict,
-                                         ylabels: Optional[List[str]], roi_paths: Optional[List[str]],
-                                         weights: Optional[List[float]] = None, contrast_mapping: Optional[dict] = None):
+                                                   ylabels: Optional[List[str]], roi_paths: Optional[List[str]],
+                                                   weights: Optional[List[float]] = None,
+                                                   contrast_mapping: Optional[dict] = None):
     experiment_data_roi_masked = apply_roi_masks(experiment_data, roi_paths)
 
-    X, Y, reverse_contrast_mapping = generate_samples_for_model(experiment_data_roi_masked, tasks_and_contrasts, ylabels,
-                                                                weights=weights, contrast_mapping=contrast_mapping)
+    X, Y, reverse_contrast_mapping = generate_samples_for_model(experiment_data_roi_masked, tasks_and_contrasts,
+                                                                ylabels, weights=weights,
+                                                                contrast_mapping=contrast_mapping)
     X_3d, Y_3d, reverse_contrast_mapping_3d = generate_samples_for_model(experiment_data, tasks_and_contrasts, ylabels,
-                                                                         weights=weights, contrast_mapping=contrast_mapping)
+                                                                         weights=weights,
+                                                                         contrast_mapping=contrast_mapping)
     return experiment_data_roi_masked, X, Y, X_3d, Y_3d, reverse_contrast_mapping
+
 
 def generate_experiment_data_after_split(experiment_data: ExperimentData, tasks_and_contrasts: dict,
                                          ylabels: Optional[List[str]], roi_paths: Optional[List[str]],
                                          weights: List[float] = None) -> (
         ExperimentDataAfterSplit, ExperimentDataAfterSplit3D):
-
     experiment_data_roi_masked, X, Y, X_3d, Y_3d, reverse_contrast_mapping = \
         apply_roi_masks_and_generate_samples_for_model(experiment_data=experiment_data,
                                                        tasks_and_contrasts=tasks_and_contrasts,

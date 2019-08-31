@@ -3,6 +3,7 @@ from sagol.load_data import create_subject_experiment_data, ExperimentDataAfterS
 from sagol.gui.globals import STATE
 from sagol.run_models import apply_roi_masks_and_generate_samples_for_model
 
+
 def clear_frame(frame):
     for child in frame.winfo_children():
         child.destroy()
@@ -20,7 +21,8 @@ def load_test_data(excel_paths, nifty_dir, combine_train_and_test=True):
     if STATE['experiment_data'] is None:
         STATE['experiment_data'] = test_experiment_data
         STATE['experiment_data_after_split'] = ExperimentDataAfterSplit(x_train=None, x_test=X, y_train=None, y_test=y)
-        STATE['experiment_data_after_split_3d'] = ExperimentDataAfterSplit3D(x_train=None, x_test=X, y_train=None, y_test=y)
+        STATE['experiment_data_after_split_3d'] = ExperimentDataAfterSplit3D(x_train=None, x_test=X, y_train=None,
+                                                                             y_test=y)
     else:
         if combine_train_and_test:
             combine_train_and_test_data(STATE['experiment_data_after_split'])

@@ -14,8 +14,6 @@ def open_data_filtering_window(contrasts_selector):
     some_label = tk.Label(text='Loading data...')
     some_label.pack()
 
-
-
     STATE['experiment_data'] = create_subject_experiment_data(
         excel_paths=STATE['excel_paths'],
         nifty_dirs=[os.path.join(STATE['root_dir'], task) for task in selected_task_names])
