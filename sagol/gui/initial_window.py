@@ -27,12 +27,16 @@ def on_root_button_click(parent):
     create_load_data_button(parent, contast_selector)
 
 
-def on_load_data_click(parent, contrasts_selector):
+def on_load_data_click(parent, contrasts_selector, btn_text):
     selected_task_names = [contrasts_selector.get(idx) for idx in contrasts_selector.curselection()]
+    btn_text.set('Loading data...')
+
 
     STATE['experiment_data'] = create_subject_experiment_data(
         excel_paths=STATE['excel_paths'],
         nifty_dirs=[os.path.join(STATE['root_dir'], task) for task in selected_task_names])
+
+    btn_text.set('Loaded data successfully!')
 
     roi_selector = display_roi_selector(parent)
 
@@ -83,10 +87,12 @@ def display_tasks_selector(parent):
 
 
 def create_load_data_button(parent, contrasts_selector):
+    btn_text = tk.StringVar()
+    btn_text.set('Load Data')
     load_data_button = tk.Button(parent,
-                                 text="Load data",
+                                 textvariable=btn_text,
                                  fg="green",
-                                 command=lambda: on_load_data_click(parent, contrasts_selector))
+                                 command=lambda: on_load_data_click(parent, contrasts_selector, btn_text))
     load_data_button.pack(side=tk.LEFT)
 
 
