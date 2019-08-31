@@ -31,10 +31,9 @@ class ExperimentData:
     shape: tuple = attrib()
     # Holds the available contrasts for each task.
     tasks_metadata: dict = attrib()
-    roi_paths: Optional[List[str]] = attrib(default=None)
 
     @property
-    def available_features(self):
+    def available_ylabels(self):
         return sorted(self.subjects_data[0].features_data.keys())
 
 
