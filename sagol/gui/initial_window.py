@@ -5,7 +5,6 @@ from tkinter import filedialog
 from sagol.gui.globals import STATE
 from sagol.load_data import create_subject_experiment_data
 from sagol.rois import get_available_rois, apply_roi_masks
-from sagol.run_models import generate_experiment_data_after_split, generate_ylabel_weights
 
 
 def load_initial_window(parent):
@@ -13,12 +12,12 @@ def load_initial_window(parent):
                               text="Choose excels",
                               fg="red",
                               command=lambda: open_excel_selector(parent))
-    excels_button.pack(side=tk.LEFT)
+    excels_button.grid(row=0, column=0)
 
     root_dir_button = tk.Button(parent,
                                 text="Choose root direcotry",
                                 command=lambda: on_root_button_click(parent))
-    root_dir_button.pack(side=tk.LEFT)
+    root_dir_button.grid(row=0, column=1)
 
 
 def on_root_button_click(parent):
@@ -31,7 +30,6 @@ def on_load_data_click(parent, contrasts_selector, btn_text):
     selected_task_names = [contrasts_selector.get(idx) for idx in contrasts_selector.curselection()]
     btn_text.set('Loading data...')
 
-
     STATE['experiment_data'] = create_subject_experiment_data(
         excel_paths=STATE['excel_paths'],
         nifty_dirs=[os.path.join(STATE['root_dir'], task) for task in selected_task_names])
@@ -41,18 +39,16 @@ def on_load_data_click(parent, contrasts_selector, btn_text):
     roi_selector = display_roi_selector(parent)
 
     choose_roi_button = tk.Button(parent,
-                                 text="Choose ROIs",
-                                 command=lambda: on_choose_roi_click(parent, roi_selector))
-    choose_roi_button.pack(side=tk.LEFT)
+                                  text="Choose ROIs",
+                                  command=lambda: on_choose_roi_click(parent, roi_selector))
+    choose_roi_button.grid(row=5)
 
 
 def on_choose_roi_click(parent, roi_selector):
     roi_paths = [roi_selector.get(idx) for idx in roi_selector.curselection()]
     STATE['roi_paths'] = roi_paths
 
-    ylabels_selector = display_ylabel_selector(parent)
-
-
+    display_ylabel_selector(parent)
 
 
 def open_excel_selector(parent):
@@ -63,7 +59,7 @@ def open_excel_selector(parent):
     STATE['excel_paths'] = excel_paths
 
     excel_paths_label = tk.Label(parent, text='\n'.join(excel_paths))
-    excel_paths_label.pack()
+    excel_paths_label.grid(row=1, column=0)
 
 
 def open_root_dir_selector(parent):
@@ -75,14 +71,14 @@ def open_root_dir_selector(parent):
     STATE['task_names'] = task_names
 
     root_dir_label = tk.Label(parent, text=root_dir)
-    root_dir_label.pack()
+    root_dir_label.grid(row=1, column=1)
 
 
 def display_tasks_selector(parent):
     contrast_selector = tk.Listbox(parent, selectmode=tk.MULTIPLE)
     for task in STATE['task_names']:
         contrast_selector.insert(tk.END, task)
-    contrast_selector.pack()
+    contrast_selector.grid(row=2, column=0)
     return contrast_selector
 
 
@@ -93,37 +89,35 @@ def create_load_data_button(parent, contrasts_selector):
                                  textvariable=btn_text,
                                  fg="green",
                                  command=lambda: on_load_data_click(parent, contrasts_selector, btn_text))
-    load_data_button.pack(side=tk.LEFT)
+    load_data_button.grid(row=3)
 
 
 def display_roi_selector(parent):
     available_rois = get_available_rois()
-    roi_selector = tk.Listbox(parent, selectmode=tk.MULTIPLE, width=max(len(roi)for roi in available_rois))
+    roi_selector = tk.Listbox(parent, selectmode=tk.MULTIPLE, width=max(len(roi) for roi in available_rois))
 
     for roi in get_available_rois():
         roi_selector.insert(tk.END, roi)
-    roi_selector.pack()
+    roi_selector.grid(row=4)
     return roi_selector
 
 
 def display_ylabel_selector(parent):
     available_ylabels = STATE['experiment_data'].available_ylabels
-    y_label_selector = tk.Listbox(parent, selectmode=tk.MULTIPLE, width=max(len(ylabel)for ylabel in available_ylabels))
+    y_label_selector = tk.Listbox(parent, selectmode=tk.MULTIPLE,
+                                  width=max(len(ylabel) for ylabel in available_ylabels))
 
     for ylabel in available_ylabels:
         y_label_selector.insert(tk.END, ylabel)
-    y_label_selector.pack()
+    y_label_selector.grid(row=6, column=0)
     choose_roi_button = tk.Button(parent,
                                   text="Choose Y labels",
                                   command=lambda: on_choose_ylabel_click(parent, y_label_selector))
-    choose_roi_button.pack(side=tk.LEFT)
+    choose_roi_button.grid(row=7)
     return y_label_selector
 
 
 def on_choose_ylabel_click(parent, ylabels_selector):
     selected_ylabels = [ylabels_selector.get(idx) for idx in ylabels_selector.curselection()]
     STATE['ylabels'] = selected_ylabels
-
     STATE['flattened_experiment_data'] = apply_roi_masks(STATE['experiment_data'], STATE['roi_paths'])
-    print(STATE['flattened_experiment_data'].shape)
-

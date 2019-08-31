@@ -6,7 +6,7 @@ from sagol.utils import setup_log_handlers
 setup_log_handlers()
 
 root = tk.Tk()
-
+root.title("Sagol")
 load_initial_window(root)
 
 root.mainloop()
