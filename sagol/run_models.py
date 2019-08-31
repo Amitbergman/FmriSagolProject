@@ -10,6 +10,7 @@ from sagol.evaluate_models import evaluate_models, Models
 from sagol.load_data import FlattenedExperimentData, ExperimentData, ExperimentDataAfterSplit, \
     ExperimentDataAfterSplit3D
 from sagol.models.bagging_regressor import train_bagging_regressor
+from sagol.models.lasso import train_lasso
 from sagol.models.nusvr import train_nusvr
 from sagol.models.svr import train_svr
 from sagol.pre_processing import generate_subjects_ylabel, one_hot_encode_contrasts, get_one_hot_from_index
@@ -49,7 +50,7 @@ def generate_samples_for_model(experiment_data: Union[FlattenedExperimentData, E
     subjects_ylabel_data = generate_subjects_ylabel(experiment_data, ylabels, weights)
 
     X, Y = [], []
-    for subject_index, subject_data in tqdm(enumerate(experiment_data.subjects_data)):
+    for subject_index, subject_data in enumerate(experiment_data.subjects_data):
         for task_name, task_data in subject_data.tasks_data.items():
             if use_all_tasks or task_name in task_names:
                 use_all_contrasts = not bool(tasks_and_contrasts.get(task_name))
@@ -147,6 +148,7 @@ def generate_models(experiment_data_after_split: ExperimentDataAfterSplit,
     train_scores = {}
 
     for model_name in model_names:
+        logger.info(f'Training {model_name} model.')
         models[model_name], parameters[model_name] = train_model(x_train, y_train, model_name=model_name,
                                                                  **model_params.get(model_name, {}))
         train_score = models[model_name].score(x_train, y_train)
@@ -231,5 +233,7 @@ def train_model(x_train: np.ndarray, y_train: np.ndarray, model_name: str, **kwa
         return train_bagging_regressor(x_train, y_train, **kwargs)
     elif model_name == 'nusvr':
         return train_nusvr(x_train, y_train, **kwargs)
+    elif model_name == 'lasso':
+        return train_lasso(x_train, y_train, **kwargs)
     else:
         raise NotImplementedError(f'Model: {model_name} is not supported.')

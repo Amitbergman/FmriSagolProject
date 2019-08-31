@@ -1,6 +1,7 @@
 AVAILABLE_MODELS = {'svr': {'kernel': str, 'C': float, 'gamma': float},
                     'bagging_regressor': {'n_estimators': int},
-                    'nusvr': {'kernel': str, 'C': float, 'gamma': float}}
+                    'nusvr': {'kernel': str, 'C': float, 'gamma': float},
+                    'lasso': {'alpha': float}}
 
 AVAILABLE_3D_MODELS = set([])
 
