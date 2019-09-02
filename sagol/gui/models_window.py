@@ -3,7 +3,7 @@ from tkinter import ttk
 from sagol.gui.globals import STATE
 from sagol.load_data import create_subject_experiment_data
 from sagol.run_models import generate_experiment_data_after_split
-from sagol.models.utils import AVAILABLE_MODELS, is_valid_param
+from sagol.models.utils import AVAILABLE_MODELS, is_valid_param, get_parameter_remark
 from sagol.evaluate_models import Models
 from sagol.rois import get_available_rois
 from sagol.gui.classes import UntrainedModels
@@ -13,13 +13,13 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
 INVALID_PARAM_MESSAGE = "At least one of the parameters is invalid"
 
-# א to be removed
+
 def create_data_and_models():
     STATE['is_load'] = False
 
     if STATE['is_load']:
         STATE['trained_models'] = Models()
-        STATE['trained_models'].load_model(model_file_path='C:/Users/Liorzlo/Desktop/svr')
+        STATE['trained_models'].load_model(model_file_path='C:/Users/Liorzlo/Desktop/cnn')
     else:
         STATE['experiment_data'] = create_subject_experiment_data(
             ["C:/Users/Liorzlo/FmriSagolProject/data/questionnaires_byTasks_new.xlsx"],
@@ -75,7 +75,7 @@ class ModelsWindow:
     # Lastly, STATE['is_load'] should be True iif the user chose to load existing models in the former window.
     def open_models_window(self):
         window = tk.Tk()
-        window.geometry('1000x650')
+        window.geometry('1300x700')
         window.title("Models")
 
         info_frame = ttk.Frame(window)
@@ -141,7 +141,7 @@ class ModelsWindow:
                 tk.messagebox.showinfo("Error", 'There is not even one matching task and contrast between ' +
                                        'loaded test data and original training data')
 
-        train_selected_frame = tk.Frame(tab_general)
+        train_selected_frame = ttk.Frame(tab_general)
         train_selected_frame.pack(expand=True)
         train_selected_btn = tk.Button(train_selected_frame, text='Train selected models',
                                        command=lambda: train_or_train_test_selected_clicked(True))
@@ -161,8 +161,13 @@ class ModelsWindow:
         def create_tab(parent, name, untrained_model):
             tab = ttk.Frame(parent)
             parent.add(tab, text=name)
-            params_frame = ttk.Frame(tab)
-            params_frame.grid(column=0, row=0, padx=(0, 100))
+            tab_inner_frame = ttk.Frame(tab)
+            tab_inner_frame.pack(side=tk.TOP)
+            left_frame = ttk.Frame(tab_inner_frame)
+            #left_frame.grid(column=0, row=0, pady=(0, 190))
+            left_frame.pack(side=tk.LEFT)
+            params_frame = ttk.Frame(left_frame)
+            params_frame.grid(column=0, row=0)
 
             def populate_params_frame(parent, params):
                 choose_params_lbl = tk.Label(parent, text='Choose parameters:')
@@ -187,6 +192,10 @@ class ModelsWindow:
                         param_entry.config(validatecommand=update_param)
                         param_entry.insert(tk.END, v)
                         param_entry.grid(column=1, row=i + 1)
+                        remark = get_parameter_remark(name, p)
+                        param_remark_lbl = tk.Label(parent, text='' if remark == '' or remark is None else '(' + remark + ')')
+                        param_remark_lbl.grid(column=2, row=i + 1)
+                        update_param()
 
                     create_param_comp(parent, i, p, v)
 
@@ -194,6 +203,7 @@ class ModelsWindow:
 
             def button_clicked(button):
                 self.clicked_button = button['text']
+                #params_frame.focus_set()
                 button.focus_set()
 
             def draw_res_plot(res_plot, results_frame):
@@ -204,20 +214,20 @@ class ModelsWindow:
                 res_plot_canvas.draw()
                 self.res_plot_canvases[name] = res_plot_canvas
 
-            # Train & test frame
             def create_results_frame():
-                results_frame = ttk.Frame(tab)
+                results_frame = ttk.Frame(tab_inner_frame)
                 self.results_frames[name] = results_frame
-                results_frame.grid(column=1, row=0)
+                #results_frame.grid(column=1, row=0)
+                results_frame.pack(side=tk.LEFT)
 
                 trained_model_lbl = tk.Label(results_frame, text='Trained model:')
                 trained_model_lbl.grid(column=0, row=0)
 
                 params_chosen_frame = ttk.Frame(results_frame)
-                params_chosen_frame.grid(column=1, row=1)
+                params_chosen_frame.grid(column=2, row=1)
                 for i, (p, v) in enumerate(STATE['trained_models'].parameters[name].items()):
                     param_lbl = tk.Label(params_chosen_frame, text=p + ': ' + str(v))
-                    param_lbl.grid(column=0, row=i)
+                    param_lbl.grid(column=i % 2, row=i // 2)
 
                 train_score_lbl = tk.Label(results_frame,
                                            text='Train score: ' + STATE['trained_models'].get_train_score(name, True))
@@ -291,7 +301,6 @@ class ModelsWindow:
             def check_params():
                 return self.check_params(name)
 
-            # Buttons
             def train_or_train_test_clicked(train_only):
                 if not check_params():
                     tk.messagebox.showinfo("Error", INVALID_PARAM_MESSAGE)
@@ -307,11 +316,12 @@ class ModelsWindow:
                 train_or_train_test_clicked(False)
 
             def btn_focus(event):
-                if self.clicked_button is not None:
-                    self.button_funcs[name][self.clicked_button]()
+                clicked_btn = self.clicked_button
+                if clicked_btn is not None:
                     self.clicked_button = None
+                    self.button_funcs[name][clicked_btn]()
 
-            train_frame = ttk.Frame(tab)
+            train_frame = ttk.Frame(left_frame)
             train_frame.grid(column=0, row=1)
             train_btn = tk.Button(train_frame, text='Train', command=lambda: button_clicked(train_btn))
             train_btn.bind("<FocusIn>", btn_focus)

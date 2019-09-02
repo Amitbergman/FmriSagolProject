@@ -78,9 +78,12 @@ class ExperimentDataAfterSplit3D:
 
 
 def combine_train_and_test_data(exp_data: Union[ExperimentDataAfterSplit, ExperimentDataAfterSplit3D]):
-    exp_data.x_train = np.concatenate((exp_data.x_train, exp_data.x_test))
-    exp_data.y_train = np.concatenate((exp_data.y_train, exp_data.y_test))
-
+    if isinstance(exp_data, ExperimentDataAfterSplit):
+        exp_data.x_train = np.concatenate((exp_data.x_train, exp_data.x_test))
+        exp_data.y_train = np.concatenate((exp_data.y_train, exp_data.y_test))
+    else:
+        exp_data.x_train.extend(exp_data.x_test)
+        exp_data.y_train.extend(exp_data.y_test)
 
 def update_test_data(exp_data: Union[ExperimentDataAfterSplit, ExperimentDataAfterSplit3D], X_test, y_test):
     exp_data.x_test = X_test

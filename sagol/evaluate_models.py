@@ -7,6 +7,8 @@ import numpy as np
 from attr import attrs, attrib
 from matplotlib.figure import Figure
 
+from sagol.models.cnn_3d import DEFAULT_BATCH_SIZE
+
 logger = logbook.Logger(__name__)
 
 
@@ -116,13 +118,12 @@ class Models:
             return '' if as_str else None
 
 
-def create_residual_plot(model, model_name: str, x_test: np.array, y_test: np.array) -> Figure:
-    fig = plt.figure(figsize=(4,3))
+def create_residual_plot_private(model_name, y_test, y_predict):
+    fig = plt.figure(figsize=(4, 3))
     plt.xlabel('True', figure=fig)
     plt.ylabel('Predicted', figure=fig)
     plt.title(f'Model: {model_name} - True VS Predicted, optimal is aligned with red line', figure=fig)
 
-    y_predict = model.predict(x_test)
     # Add data points.
     plt.scatter(y_test, y_predict, color='black', figure=fig)
     # Add optimal line - a perfect prediction.
@@ -130,8 +131,21 @@ def create_residual_plot(model, model_name: str, x_test: np.array, y_test: np.ar
     return fig
 
 
-def evaluate_models(models: Models, x_test, y_test) -> Models:
+def create_residual_plot(model, model_name: str, x_test: np.array, y_test: np.array) -> Figure:
+    return create_residual_plot_private(model_name, y_test, model.predict(x_test))
+
+
+def create_residual_plot_cnn(model, model_name: str, x_test, y_test, batch_size=-1) -> Figure:
+    return create_residual_plot_private(model_name, y_test, model.predict(x_test, batch_size=batch_size))
+
+
+def evaluate_models(models: Models, x_test, y_test, x_test_3d, y_test_3d) -> Models:
     for model_name, model in models.models.items():
-        models.test_scores[model_name] = model.score(x_test, y_test)
-        models.residual_plots[model_name] = create_residual_plot(model, model_name, x_test, y_test)
+        if model_name == 'cnn':
+            models.test_scores[model_name] = model.score(x_test_3d, y_test_3d, batch_size=DEFAULT_BATCH_SIZE)
+            models.residual_plots[model_name] = create_residual_plot_cnn(model, model_name, x_test_3d, y_test_3d,
+                                                                         batch_size=DEFAULT_BATCH_SIZE)
+        else:
+            models.test_scores[model_name] = model.score(x_test, y_test)
+            models.residual_plots[model_name] = create_residual_plot(model, model_name, x_test, y_test)
     return models

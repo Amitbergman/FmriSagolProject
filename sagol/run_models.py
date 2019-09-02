@@ -12,7 +12,8 @@ from sagol.models.bagging_regressor import train_bagging_regressor
 from sagol.models.lasso import train_lasso
 from sagol.models.nusvr import train_nusvr
 from sagol.models.svr import train_svr
-from sagol.models.utils import AVAILABLE_MODELS
+from sagol.models.cnn_3d import train_cnn_3d, DEFAULT_BATCH_SIZE
+from sagol.models.utils import AVAILABLE_MODELS, AVAILABLE_3D_MODELS
 from sagol.pre_processing import generate_subjects_ylabel, one_hot_encode_contrasts, get_one_hot_from_index
 from sagol.rois import apply_roi_masks
 
@@ -21,8 +22,7 @@ logger = logbook.Logger(__name__)
 
 def generate_samples_for_model(experiment_data: Union[FlattenedExperimentData, ExperimentData],
                                tasks_and_contrasts: dict, ylabels: List[str],
-                               weights: Optional[List] = None, contrast_mapping: Optional[dict] = None) -> (
-        np.ndarray, np.ndarray, dict):
+                               weights: Optional[List] = None, contrast_mapping: Optional[dict] = None):
     """
     :param tasks_and_contrasts: A dictionary of {<task_name>: [<contrast_name>, <contrast_name2>]}
     Pass `None` to fetch all tasks and all contrasts. Pass None/[] inside a `task_name` to fetch all contrast for
@@ -64,7 +64,9 @@ def generate_samples_for_model(experiment_data: Union[FlattenedExperimentData, E
                             current_contrast_index += 1
                         # Add the contrast as the last feature in the data.
                         if is_3d:
-                            X.append([torch.from_numpy(fmri_data), task_contrast_name])
+                            fmri_data_tensor = torch.from_numpy(fmri_data).type(torch.FloatTensor)
+                            #contrast_tensor = torch.Tensor([contrast_hot_encoding_mapping[task_contrast_name]])
+                            X.append([fmri_data_tensor, contrast_hot_encoding_mapping[task_contrast_name]])
                         else:
                             X.append(np.concatenate((fmri_data, [contrast_hot_encoding_mapping[task_contrast_name]])))
                         Y.append(subjects_ylabel_data[subject_index])
@@ -74,9 +76,10 @@ def generate_samples_for_model(experiment_data: Union[FlattenedExperimentData, E
     if is_3d:
         number_of_contrasts = current_contrast_index
         for entry in X:
-            entry[1] = get_one_hot_from_index(contrast_hot_encoding_mapping[entry[1]], number_of_contrasts)
+            entry[1] = torch.Tensor(get_one_hot_from_index(entry[1], number_of_contrasts))
     else:
         X = one_hot_encode_contrasts(np.array(X))
+        Y = np.array(Y)
 
     # Returning the inverse dictionary to allow getting the task+contrasts out of their index.
     one_hot_encoding_mapping = {ind: task_contrast_name for task_contrast_name, ind in
@@ -132,11 +135,19 @@ def generate_models(experiment_data_after_split: ExperimentDataAfterSplit,
         y_train = np.concatenate((experiment_data_after_split.y_train, experiment_data_after_split.y_test))
         x_test = None
         y_test = None
+        x_train_3d = experiment_data_after_split_3d.x_train + experiment_data_after_split_3d.x_test
+        y_train_3d = experiment_data_after_split_3d.y_train + experiment_data_after_split_3d.y_test
+        x_test_3d = None
+        y_test_3d = None
     else:
         x_train = experiment_data_after_split.x_train
         y_train = experiment_data_after_split.y_train
         x_test = experiment_data_after_split.x_test
         y_test = experiment_data_after_split.y_test
+        x_train_3d = experiment_data_after_split_3d.x_train
+        y_train_3d = experiment_data_after_split_3d.y_train
+        x_test_3d = experiment_data_after_split_3d.x_test
+        y_test_3d = experiment_data_after_split_3d.y_test
 
     model_names = model_names or AVAILABLE_MODELS.keys()
     model_params = model_params or {}
@@ -146,9 +157,17 @@ def generate_models(experiment_data_after_split: ExperimentDataAfterSplit,
 
     for model_name in model_names:
         logger.info(f'Training {model_name} model.')
-        models[model_name], parameters[model_name] = train_model(x_train, y_train, model_name=model_name,
-                                                                 **model_params.get(model_name, {}))
-        train_score = models[model_name].score(x_train, y_train)
+        if model_name == 'cnn':
+            model_params[model_name]['contrast_dim'] = len(reverse_contrast_mapping)
+            model_params[model_name]['in_size'] = experiment_data_after_split_3d.shape
+        if model_name in AVAILABLE_3D_MODELS:
+            models[model_name], parameters[model_name] = train_model(x_train_3d, y_train_3d, model_name=model_name,
+                                                                     **model_params.get(model_name, {}))
+            train_score = models[model_name].score(x_train_3d, y_train_3d, batch_size=DEFAULT_BATCH_SIZE)
+        else:
+            models[model_name], parameters[model_name] = train_model(x_train, y_train, model_name=model_name,
+                                                                     **model_params.get(model_name, {}))
+            train_score = models[model_name].score(x_train, y_train)
         train_scores[model_name] = train_score
 
         logger.info(f'Trained {model_name} model, score on train data: {train_score}.')
@@ -158,7 +177,7 @@ def generate_models(experiment_data_after_split: ExperimentDataAfterSplit,
                     shape=experiment_data_after_split.shape, models=models, parameters=parameters)
 
     if not train_only:
-        models = evaluate_models(models, x_test, y_test)
+        models = evaluate_models(models, x_test=x_test, y_test=y_test, x_test_3d=x_test_3d, y_test_3d=y_test_3d)
         logger.info(f'Model test scores: {models.test_scores}')
 
     return models, experiment_data_after_split, experiment_data_after_split_3d
@@ -168,14 +187,16 @@ def apply_roi_masks_and_generate_samples_for_model(experiment_data: ExperimentDa
                                                    ylabels: Optional[List[str]], roi_paths: Optional[List[str]],
                                                    weights: Optional[List[float]] = None,
                                                    contrast_mapping: Optional[dict] = None):
+    X_3d, Y_3d, reverse_contrast_mapping_3d = generate_samples_for_model(experiment_data, tasks_and_contrasts, ylabels,
+                                                                         weights=weights,
+                                                                         contrast_mapping=contrast_mapping)
+
     experiment_data_roi_masked = apply_roi_masks(experiment_data, roi_paths)
 
     X, Y, reverse_contrast_mapping = generate_samples_for_model(experiment_data_roi_masked, tasks_and_contrasts,
                                                                 ylabels, weights=weights,
                                                                 contrast_mapping=contrast_mapping)
-    X_3d, Y_3d, reverse_contrast_mapping_3d = generate_samples_for_model(experiment_data, tasks_and_contrasts, ylabels,
-                                                                         weights=weights,
-                                                                         contrast_mapping=contrast_mapping)
+
     return experiment_data_roi_masked, X, Y, X_3d, Y_3d, reverse_contrast_mapping
 
 
@@ -192,6 +213,8 @@ def generate_experiment_data_after_split(experiment_data: ExperimentData, tasks_
     # Make the same train-test split for both the flattened and 3D data.
     x_train_3d = [X_3d[ind] for ind in train_idx]
     x_test_3d = [X_3d[ind] for ind in test_idx]
+    y_train_3d = [Y_3d[ind] for ind in train_idx]
+    y_test_3d = [Y_3d[ind] for ind in test_idx]
 
     experiment_data_after_split = ExperimentDataAfterSplit(
         x_train=x_train,
@@ -205,9 +228,9 @@ def generate_experiment_data_after_split(experiment_data: ExperimentData, tasks_
 
     experiment_data_after_split_3d = ExperimentDataAfterSplit3D(
         x_train=x_train_3d,
-        y_train=y_train,
+        y_train=y_train_3d,
         x_test=x_test_3d,
-        y_test=y_test,
+        y_test=y_test_3d,
         shape=experiment_data_roi_masked.shape
     )
 
@@ -236,5 +259,7 @@ def train_model(x_train: np.ndarray, y_train: np.ndarray, model_name: str, **kwa
         return train_nusvr(x_train, y_train, **kwargs)
     elif model_name == 'lasso':
         return train_lasso(x_train, y_train, **kwargs)
+    elif model_name == 'cnn':
+        return train_cnn_3d(x_train, y_train, **kwargs)
     else:
         raise NotImplementedError(f'Model: {model_name} is not supported.')
