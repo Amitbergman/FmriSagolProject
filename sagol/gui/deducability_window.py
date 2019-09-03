@@ -5,6 +5,7 @@ from sagol.gui.globals import STATE
 from sagol.gui.deducability_functions import DEDUCABILITY_CREATORS, DEDUCABILITY_NAMES
 
 
+
 class DeducabilityWindow():
     def __init__(self, model_name):
         self.model_name = model_name
