@@ -1,10 +1,17 @@
 import tkinter as tk
-from sagol.deducability import deduce_by_leave_one_roi_out, plot_brain_image_from_nifty
-from sagol.gui.globals import STATE
-from sagol.evaluate_models import Models
+from functools import partial
+
 from PIL import ImageTk, Image
 
+from sagol.deducability import deduce_by_leave_one_roi_out, plot_brain_image_from_nifty
+from sagol.evaluate_models import Models
+from sagol.gui.globals import STATE
+import nibabel as nib
+from nilearn import plotting
 image_of_brain = None
+import random
+
+
 class roi_to_accuracy_table(tk.Toplevel):
     def __init__(self, dictionary):
         tk.Toplevel.__init__(self)
@@ -22,16 +29,18 @@ class SimpleTable(tk.Frame):
         index = 0
         l = list(dictionary.items())
         l = [('roi', 'accuracy without the roi')] + l
+
         for (key, val) in l:
-            if index ==0:
+            if index == 0:
                 col_0 = 'roi'
                 col_1 = 'test accuracy without the roi'
             else:
                 col_0 = key
                 col_1 = val
             current_row = []
-            roi_button = tk.Button(self, text=col_0, command=lambda: show_roi(key, self), width=10)
-            if index==0:
+
+            roi_button = tk.Button(self, text=col_0, command=partial(show_roi, key), width=10)
+            if index == 0:
                 roi_button["state"] = "disabled"
 
             roi_button.grid(row=index, column=0, sticky="nsew", padx=1, pady=1)
@@ -42,30 +51,25 @@ class SimpleTable(tk.Frame):
             label.grid(row=index, column=1, sticky="nsew", padx=1, pady=1)
             current_row.append(label)
             self._widgets.append(current_row)
-            index +=1
+            index += 1
 
         for column in range(2):
             self.grid_columnconfigure(column, weight=1)
-
 
     def set(self, row, column, value):
         widget = self._widgets[row][column]
         widget.configure(text=value)
 
-def show_roi(path_of_roi, frame):
-    import nibabel as nib
-    from nilearn import plotting
+
+def show_roi(path_of_roi):
+
     global image_of_brain
     window = tk.Toplevel()
     window.geometry('1300x700')
-    window.title("Models")
+    window.title("Relevant ROIS")
+    path_of_image = 'roi_' + str(random.randint(1, 100200)) + '.jpg'
 
-    path_of_image = 'name123.jpg'
-    data = nib.load(path_of_roi)
 
-    display = plotting.plot_roi(data,
-                                title="plot_roi")
-    display.savefig(path_of_image)
     plot_brain_image_from_nifty(path_of_roi, path_of_image)
 
     image_of_brain = ImageTk.PhotoImage(Image.open(path_of_image))
@@ -75,6 +79,7 @@ def show_roi(path_of_roi, frame):
     label.pack(side="bottom", fill="both", expand="yes")
 
     window.mainloop()
+
 
 def create_deducability_by_leave_on_roi_out_screan(model_name):
     trained_models = STATE['trained_models']

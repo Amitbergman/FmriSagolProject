@@ -4,9 +4,11 @@ import copy
 import numpy as np
 import nibabel as nib
 from nilearn import plotting
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
 def deduce_by_leave_one_roi_out(models: Models, flattened_experiment_data: ExperimentDataAfterSplit):
     # will return the score without roi1, without roi2
+    map_roi_to_score_without_it = {}
     for model_name, model in models.models.items():
         score_on_all_rois = model.score(flattened_experiment_data.x_test,
                                         flattened_experiment_data.y_test)
@@ -18,7 +20,9 @@ def deduce_by_leave_one_roi_out(models: Models, flattened_experiment_data: Exper
             model.fit(current_x_train, flattened_experiment_data.y_train)
             print(
                 f"score in model {model_name} without roi {roi_path} is {model.score(current_x_test, flattened_experiment_data.y_test)}")
+            map_roi_to_score_without_it[roi_path] = model.score(current_x_test, flattened_experiment_data.y_test)
 
+    return map_roi_to_score_without_it
 
 def get_indexes_of_roi(roi_path, d):
     return [k for k, v in d.items() if roi_path in v]
@@ -48,9 +52,12 @@ def deduce_from_bagging_regressor(models: Models, first_index_of_contrast):
                                     for index, value in enumerate(feature_importances[:first_index_of_contrast])}
     return models_importances
 
-def plot_brain_image_from_nifty(nifty_path):
+def plot_brain_image_from_nifty(nifty_path, path_to_save):
     data = nib.load(nifty_path)
 
-    plotting.plot_roi(data,
+    display = plotting.plot_roi(data,
                       title="plot_roi")
-    plotting.show()
+    display.savefig(path_to_save)
+
+
+
