@@ -58,7 +58,10 @@ def on_choose_roi_click(parent, roi_selector):
     roi_paths = [roi_selector.get(idx) for idx in roi_selector.curselection()]
     STATE['roi_paths'] = roi_paths
 
-    display_ylabel_selector(parent)
+    ylabels_frame = ttk.Frame(parent)
+    ylabels_frame.grid(row=0, column=5)
+
+    display_ylabel_selector(ylabels_frame)
 
 
 def open_excel_selector(parent):
@@ -139,11 +142,11 @@ def display_ylabel_selector(parent):
 
     for ylabel in available_ylabels:
         y_label_selector.insert(tk.END, ylabel)
-    y_label_selector.grid(row=1, column=4)
+    y_label_selector.grid(row=0, column=0)
     choose_roi_button = tk.Button(parent,
                                   text="Choose Y labels",
                                   command=lambda: on_choose_ylabel_click(parent, y_label_selector))
-    choose_roi_button.grid(row=2, column=4)
+    choose_roi_button.grid(row=1, column=0)
     return y_label_selector
 
 
@@ -156,16 +159,16 @@ def on_choose_ylabel_click(parent, ylabels_selector):
 
 def display_weights_selector(parent, ylabels):
     weights_selector = ttk.Frame(parent)
-    weights_selector.grid(row=3, column=4)
+    weights_selector.grid(row=2, column=0)
 
     ylabel_entries = []
 
     i = 0
     for i, ylabel in enumerate(ylabels):
         ylabel_text = tk.Label(parent, text=f'{ylabel}: ')
-        ylabel_text.grid(row=i + 4, column=4)
+        ylabel_text.grid(row=i + 2, column=0)
         ylabel_entry = tk.Entry(parent, width=10, validate='focus')
-        ylabel_entry.grid(row=i + 4, column=4)
+        ylabel_entry.grid(row=i + 2, column=1)
         # Default to all equal weights.
         ylabel_entry.insert(tk.END, str(1 / len(ylabels)))
         ylabel_entries.append((ylabel, ylabel_entry))
@@ -174,7 +177,7 @@ def display_weights_selector(parent, ylabels):
                                    text="Set ylabel weights",
                                    fg="green",
                                    command=lambda: on_weights_selector_click(ylabel_entries))
-    set_ylabel_weights.grid(row=i + 5, column=4)
+    set_ylabel_weights.grid(row=i + 3, column=0)
 
 
 def on_weights_selector_click(ylabel_entries):

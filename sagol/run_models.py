@@ -267,8 +267,8 @@ def generate_ylabel_weights(ylabels: List[str], ylabel_to_weight: Optional[dict]
     weights = []
     if ylabel_to_weight:
         assert len(ylabel_to_weight) == len(ylabels), 'Weights must be provided for all ylabels.'
-        sum_of_weights = sum(ylabel_to_weight.values()) != 1
-        if sum_of_weights:
+        sum_of_weights = sum(ylabel_to_weight.values())
+        if sum_of_weights != 1:
             logger.info('Weights were not normalized, normalizing the weights such that the sum is 1.')
             ylabel_to_weight = {k: v / sum_of_weights for k, v in ylabel_to_weight.items()}
 
