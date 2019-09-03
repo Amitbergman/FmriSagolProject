@@ -3,7 +3,7 @@ from functools import partial
 
 from PIL import ImageTk, Image
 
-from sagol.deducability import deduce_by_leave_one_roi_out, plot_brain_image_from_nifty
+from sagol.deducability import deduce_by_leave_one_roi_out, plot_brain_image_from_nifty_path
 from sagol.evaluate_models import Models
 from sagol.gui.globals import STATE
 
@@ -62,8 +62,8 @@ def show_roi(path_of_roi):
     window.geometry('1300x700')
     window.title("Relevant ROIS")
 
-    path_of_image = 'roi_' + str(random.randint(1, 100200)) + '.jpg'
-    plot_brain_image_from_nifty(path_of_roi, path_of_image)
+    path_of_image = 'roi_' + str(random.randint(1, 1000200)) + '.jpg'
+    plot_brain_image_from_nifty_path(path_of_roi, path_of_image)
 
     image_of_brain = ImageTk.PhotoImage(Image.open(path_of_image))
 

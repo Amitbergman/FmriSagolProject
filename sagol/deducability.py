@@ -52,12 +52,19 @@ def deduce_from_bagging_regressor(models, first_index_of_contrast, flattened_vec
     return models_importances
 
 
-def plot_brain_image_from_nifty(nifty_path, path_to_save):
+def plot_brain_image_from_nifty_path(nifty_path, path_to_save):
     data = nib.load(nifty_path)
 
     display = plotting.plot_roi(data,
                       title="plot_roi")
     display.savefig(path_to_save)
+
+def plot_brain_image_from_nifty(nifty, path_to_save):
+
+    display = plotting.plot_roi(nifty,
+                      title="plot_roi")
+    display.savefig(path_to_save)
+
 
 
 def from_1d_voxel_to_3d_voxel(voxel_1d, shape_3d):
