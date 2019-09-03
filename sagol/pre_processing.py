@@ -121,3 +121,16 @@ def centeralize_1d_data(X, y, axis: str, first_index_of_contrast=None):
 
     # Notcie that the new X and y might not be shuffled
     return X_centeralized, y_centeralized
+
+
+def generate_ylabel_weights(ylabels: List[str], ylabel_to_weight: Optional[dict]) -> List[float]:
+    weights = []
+    if ylabel_to_weight:
+        assert len(ylabel_to_weight) == len(ylabels), 'Weights must be provided for all ylabels.'
+        sum_of_weights = sum(ylabel_to_weight.values())
+        if sum_of_weights != 1:
+            logger.info('Weights were not normalized, normalizing the weights such that the sum is 1.')
+            ylabel_to_weight = {k: v / sum_of_weights for k, v in ylabel_to_weight.items()}
+
+        weights = [ylabel_to_weight[ylabel] for ylabel in ylabels]
+    return weights

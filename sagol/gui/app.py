@@ -11,12 +11,7 @@ matplotlib.rcParams.update({'font.size': 6})
 
 root = tk.Tk()
 root.title("Sagol")
-
-
-background_image = ImageTk.PhotoImage(Image.open('./brain_background.png'))
-background_label = tk.Label(root, image=background_image)
-background_label.place(x=0, y=0, relwidth=1, relheight=1)
-background_label.photo = background_image
+root.geometry('1300x700')
 
 load_initial_window(root)
 

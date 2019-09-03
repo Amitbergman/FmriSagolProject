@@ -7,27 +7,33 @@ from sagol.gui.globals import STATE
 from sagol.gui.models_window import ModelsWindow
 from sagol.load_data import create_subject_experiment_data
 from sagol.rois import get_available_rois
-from sagol.run_models import generate_ylabel_weights
+from sagol.pre_processing import generate_ylabel_weights
 
 
 def load_initial_window(parent):
     excels_button = tk.Button(parent,
                               text="Choose excels",
                               fg="green",
+                              width=40,
+                              height=5,
                               command=lambda: open_excel_selector(parent))
     excels_button.grid(row=0, column=0)
 
     root_dir_button = tk.Button(parent,
                                 text="Choose root direcotry",
                                 fg='blue',
+                                width=40,
+                                height=5,
                                 command=lambda: on_root_button_click(parent))
-    root_dir_button.grid(row=0, column=1)
+    root_dir_button.grid(row=1, column=0)
 
     load_models_button = tk.Button(parent,
                                    text="Load models",
                                    fg="black",
+                                   width=40,
+                                   height=5,
                                    command=lambda: open_load_models_selector())
-    load_models_button.grid(row=0, column=2)
+    load_models_button.grid(row=2, column=0)
 
 
 def on_root_button_click(parent):
@@ -51,7 +57,7 @@ def on_load_data_click(parent, contrasts_selector, btn_text):
     choose_roi_button = tk.Button(parent,
                                   text="Choose ROIs",
                                   command=lambda: on_choose_roi_click(parent, roi_selector))
-    choose_roi_button.grid(row=5)
+    choose_roi_button.grid(row=6, column=0)
 
 
 def on_choose_roi_click(parent, roi_selector):
@@ -72,7 +78,7 @@ def open_excel_selector(parent):
     STATE['excel_paths'] = excel_paths
 
     excel_paths_label = tk.Label(parent, text='\n'.join(excel_paths))
-    excel_paths_label.grid(row=1, column=0)
+    excel_paths_label.grid(row=0, column=1)
 
 
 def open_root_dir_selector(parent):
@@ -111,7 +117,7 @@ def display_tasks_selector(parent):
     contrast_selector = tk.Listbox(parent, selectmode=tk.MULTIPLE)
     for task in STATE['task_names']:
         contrast_selector.insert(tk.END, task)
-    contrast_selector.grid(row=2, column=0)
+    contrast_selector.grid(row=3, column=0)
     return contrast_selector
 
 
@@ -122,7 +128,7 @@ def create_load_data_button(parent, contrasts_selector):
                                  textvariable=btn_text,
                                  fg="green",
                                  command=lambda: on_load_data_click(parent, contrasts_selector, btn_text))
-    load_data_button.grid(row=3)
+    load_data_button.grid(row=4)
 
 
 def display_roi_selector(parent):
@@ -131,7 +137,7 @@ def display_roi_selector(parent):
 
     for roi in get_available_rois():
         roi_selector.insert(tk.END, roi)
-    roi_selector.grid(row=4)
+    roi_selector.grid(row=5, column=0)
     return roi_selector
 
 
