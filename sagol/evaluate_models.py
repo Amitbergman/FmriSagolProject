@@ -141,6 +141,8 @@ def create_residual_plot_cnn(model, model_name: str, x_test, y_test, batch_size=
 
 def evaluate_models(models: Models, x_test, y_test, x_test_3d, y_test_3d) -> Models:
     for model_name, model in models.models.items():
+        if not model:
+            continue
         if model_name == 'cnn':
             models.test_scores[model_name] = model.score(x_test_3d, y_test_3d, batch_size=DEFAULT_BATCH_SIZE)
             models.residual_plots[model_name] = create_residual_plot_cnn(model, model_name, x_test_3d, y_test_3d,

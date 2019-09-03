@@ -159,14 +159,21 @@ def generate_models(experiment_data_after_split: ExperimentDataAfterSplit,
     parameters = {}
     train_scores = {}
 
+    if 'cnn' in model_names:
+        model_params.setdefault('cnn', {})
+        model_params['cnn']['contrast_dim'] = len(reverse_contrast_mapping)
+        model_params['cnn']['in_size'] = experiment_data_after_split_3d.shape
+
     for model_name in model_names:
         logger.info(f'Training {model_name} model.')
-        if model_name == 'cnn':
-            model_params[model_name]['contrast_dim'] = len(reverse_contrast_mapping)
-            model_params[model_name]['in_size'] = experiment_data_after_split_3d.shape
         if model_name in AVAILABLE_3D_MODELS:
             models[model_name], parameters[model_name] = train_model(x_train_3d, y_train_3d, model_name=model_name,
                                                                      **model_params.get(model_name, {}))
+
+            # Not all params were passed to the 3D, so no model was created.
+            if not models[model_name]:
+                continue
+
             train_score = models[model_name].score(x_train_3d, y_train_3d, batch_size=DEFAULT_BATCH_SIZE)
         else:
             models[model_name], parameters[model_name] = train_model(x_train, y_train, model_name=model_name,
