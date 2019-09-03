@@ -29,7 +29,7 @@ REMARKS = {'cnn': {'filters': LIST_FORMAT_NOT_EMPTY_REMARK,
                    'hidden_dimensions': LIST_FORMAT_DEFAULT_IS_EMPTY_REMARK,
                    'hidden_dimensions_of_regressor': LIST_FORMAT_DEFAULT_IS_EMPTY_REMARK}}
 
-AVAILABLE_3D_MODELS = set(['cnn'])
+AVAILABLE_3D_MODELS = ['cnn']
 
 
 def get_model_params(model_name, model, params_to_get=None):
