@@ -95,4 +95,5 @@ def apply_roi_masks(experiment_data: ExperimentData, roi_paths: Optional[List[st
     return FlattenedExperimentData(subjects_data=experiment_data.subjects_data,
                                    flattened_vector_index_to_voxel=flattened_vector_index_to_voxel,
                                    flattened_vector_index_to_rois=flattened_vector_index_to_rois,
-                                   shape=experiment_data.shape)
+                                   shape=experiment_data.shape,
+                                   roi_paths=roi_paths)

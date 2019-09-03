@@ -34,7 +34,8 @@ def prepare_data():
     STATE['experiment_data_after_split'], STATE['experiment_data_after_split_3d'], \
         STATE['trained_models'].reverse_contrast_mapping = generate_experiment_data_after_split(
         experiment_data=STATE['experiment_data'], roi_paths=trained_models.roi_paths,
-        tasks_and_contrasts=STATE['tasks_and_contrasts'], ylabels=trained_models.ylabels, weights=STATE['weights'])
+        tasks_and_contrasts=STATE['tasks_and_contrasts'], ylabels=trained_models.ylabels, weights=STATE['weights'],
+        should_use_rois=bool(trained_models.roi_paths))
 
 
 class ModelsWindow:

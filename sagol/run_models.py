@@ -4,6 +4,7 @@ import logbook
 import numpy as np
 import torch
 from sklearn.model_selection import train_test_split
+from tqdm import tqdm
 
 from sagol.evaluate_models import evaluate_models, Models
 from sagol.load_data import FlattenedExperimentData, ExperimentData, ExperimentDataAfterSplit, \
@@ -65,7 +66,7 @@ def generate_samples_for_model(experiment_data: Union[FlattenedExperimentData, E
                         # Add the contrast as the last feature in the data.
                         if is_3d:
                             fmri_data_tensor = torch.from_numpy(fmri_data).type(torch.FloatTensor)
-                            #contrast_tensor = torch.Tensor([contrast_hot_encoding_mapping[task_contrast_name]])
+                            # contrast_tensor = torch.Tensor([contrast_hot_encoding_mapping[task_contrast_name]])
                             X.append([fmri_data_tensor, contrast_hot_encoding_mapping[task_contrast_name]])
                         else:
                             X.append(np.concatenate((fmri_data, [contrast_hot_encoding_mapping[task_contrast_name]])))
@@ -91,7 +92,8 @@ def generate_samples_for_model(experiment_data: Union[FlattenedExperimentData, E
 def get_or_create_models(experiment_data: ExperimentData, tasks_and_contrasts, ylabels: List[str],
                          roi_paths: Optional[List[str]], ylabel_to_weight: Optional[dict] = None,
                          model_params: Optional[dict] = None, train_only: bool = False,
-                         model_names: Optional[List[str]] = None) -> Models:
+                         model_names: Optional[List[str]] = None,
+                         should_use_rois: bool = True) -> Models:
     model_params = model_params or {}
 
     pre_computed_models = get_pre_computed_models()
@@ -103,7 +105,8 @@ def get_or_create_models(experiment_data: ExperimentData, tasks_and_contrasts, y
                                                                ylabel_to_weight=ylabel_to_weight,
                                                                model_params=model_params,
                                                                train_only=train_only,
-                                                               model_names=model_names)
+                                                               model_names=model_names,
+                                                               should_use_rois=should_use_rois)
         return models
 
 
@@ -115,11 +118,12 @@ def split_data_and_generate_models(experiment_data: ExperimentData, tasks_and_co
                                    ylabels: List[str], roi_paths: Optional[List[str]],
                                    ylabel_to_weight: Optional[dict] = None,
                                    model_params: Optional[dict] = None, train_only: bool = False,
-                                   model_names: Optional[List[str]] = None) -> (
+                                   model_names: Optional[List[str]] = None,
+                                   should_use_rois: bool = True) -> (
         Models, ExperimentDataAfterSplit, ExperimentDataAfterSplit3D):
     weights = generate_ylabel_weights(ylabels, ylabel_to_weight)
     experiment_data_after_split, experiment_data_after_split_3d, reverse_contrast_mapping = generate_experiment_data_after_split(
-        experiment_data, tasks_and_contrasts, ylabels, roi_paths, weights)
+        experiment_data, tasks_and_contrasts, ylabels, roi_paths, weights, should_use_rois=should_use_rois)
     return generate_models(experiment_data_after_split, experiment_data_after_split_3d,
                            reverse_contrast_mapping=reverse_contrast_mapping, ylabels=ylabels, roi_paths=roi_paths,
                            model_names=model_names, model_params=model_params, train_only=train_only)
@@ -185,29 +189,44 @@ def generate_models(experiment_data_after_split: ExperimentDataAfterSplit,
 
 def apply_roi_masks_and_generate_samples_for_model(experiment_data: ExperimentData, tasks_and_contrasts: dict,
                                                    ylabels: Optional[List[str]], roi_paths: Optional[List[str]],
+                                                   should_use_rois: bool = True,
                                                    weights: Optional[List[float]] = None,
                                                    contrast_mapping: Optional[dict] = None):
     X_3d, Y_3d, reverse_contrast_mapping_3d = generate_samples_for_model(experiment_data, tasks_and_contrasts, ylabels,
                                                                          weights=weights,
                                                                          contrast_mapping=contrast_mapping)
 
-    experiment_data_roi_masked = apply_roi_masks(experiment_data, roi_paths)
+    if should_use_rois:
+        flattened_experiment_data = apply_roi_masks(experiment_data, roi_paths)
+    else:
+        logger.info('Not applying ROI masks, data dimensionality will be larger! Simply flattening...')
+        for subject_data in tqdm(experiment_data.subjects_data):
+            for task_name, task_data in subject_data.tasks_data.items():
+                for contrast_name, fmri_data in task_data.items():
+                    subject_data.tasks_data[task_name][contrast_name] = fmri_data.flatten()
+        flattened_experiment_data = FlattenedExperimentData(subjects_data=experiment_data.subjects_data,
+                                                            flattened_vector_index_to_voxel={},
+                                                            flattened_vector_index_to_rois={},
+                                                            shape=experiment_data.shape,
+                                                            roi_paths=[])
+        logger.info('Finished flattenning fMRI data.')
 
-    X, Y, reverse_contrast_mapping = generate_samples_for_model(experiment_data_roi_masked, tasks_and_contrasts,
+    X, Y, reverse_contrast_mapping = generate_samples_for_model(flattened_experiment_data, tasks_and_contrasts,
                                                                 ylabels, weights=weights,
                                                                 contrast_mapping=contrast_mapping)
 
-    return experiment_data_roi_masked, X, Y, X_3d, Y_3d, reverse_contrast_mapping
+    return flattened_experiment_data, X, Y, X_3d, Y_3d, reverse_contrast_mapping
 
 
 def generate_experiment_data_after_split(experiment_data: ExperimentData, tasks_and_contrasts: dict,
                                          ylabels: Optional[List[str]], roi_paths: Optional[List[str]],
-                                         weights: List[float] = None) -> (
+                                         weights: List[float] = None, should_use_rois: bool = True) -> (
         ExperimentDataAfterSplit, ExperimentDataAfterSplit3D):
     experiment_data_roi_masked, X, Y, X_3d, Y_3d, reverse_contrast_mapping = \
         apply_roi_masks_and_generate_samples_for_model(experiment_data=experiment_data,
-                                                       tasks_and_contrasts=tasks_and_contrasts,
-                                                       ylabels=ylabels, roi_paths=roi_paths, weights=weights)
+                                                       tasks_and_contrasts=tasks_and_contrasts, ylabels=ylabels,
+                                                       roi_paths=roi_paths, weights=weights,
+                                                       should_use_rois=should_use_rois)
 
     x_train, x_test, y_train, y_test, train_idx, test_idx = train_test_split(X, Y, np.arange(len(X)))
     # Make the same train-test split for both the flattened and 3D data.

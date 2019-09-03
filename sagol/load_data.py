@@ -1,7 +1,7 @@
 import os
 import re
 from collections import defaultdict
-from typing import Union, List
+from typing import Union, List, Optional
 
 import logbook
 import nibabel as nib
@@ -48,20 +48,21 @@ class ExperimentData:
 @attrs
 class FlattenedExperimentData:
     subjects_data: List[SubjectExperimentData] = attrib()
-    # Contains a mapping between the flattened vector after dimensionality reduction to the voxel in the original image.
-    # {0: 1762, 1: 1763, 2: 1764 ..., 25: 16584}
-    flattened_vector_index_to_voxel: dict = attrib()
-    # Same as `flattened_vector_index_to_voxel`, but allows tracking back the relevant ROIs for deductibility,
-    flattened_vector_index_to_rois: dict = attrib()
     # (x, y, z)
     shape: tuple = attrib()
+    roi_paths: Optional[List[str]] = attrib()
+    # Contains a mapping between the flattened vector after dimensionality reduction to the voxel in the original image.
+    # {0: 1762, 1: 1763, 2: 1764 ..., 25: 16584}
+    flattened_vector_index_to_voxel: dict = attrib(default={})
+    # Same as `flattened_vector_index_to_voxel`, but allows tracking back the relevant ROIs for deductibility,
+    flattened_vector_index_to_rois: dict = attrib(default={})
 
 
 @attrs
 class ExperimentDataAfterSplit:
     x_test: np.ndarray = attrib()
-    x_train: np.ndarray = attrib()
-    y_train: np.ndarray = attrib()
+    x_train: Optional[np.ndarray] = attrib()
+    y_train: Optional[np.ndarray] = attrib()
     y_test: np.ndarray = attrib()
     flattened_vector_index_to_voxel: dict = attrib()
     flattened_vector_index_to_rois: dict = attrib()
@@ -84,6 +85,7 @@ def combine_train_and_test_data(exp_data: Union[ExperimentDataAfterSplit, Experi
     else:
         exp_data.x_train.extend(exp_data.x_test)
         exp_data.y_train.extend(exp_data.y_test)
+
 
 def update_test_data(exp_data: Union[ExperimentDataAfterSplit, ExperimentDataAfterSplit3D], X_test, y_test):
     exp_data.x_test = X_test
