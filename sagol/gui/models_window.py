@@ -279,6 +279,8 @@ class ModelsWindow:
                     STATE['unavailable_deducabilities'] = set()
                     if STATE['is_load']:
                         STATE['unavailable_deducabilities'].add('deduce_by_leave_one_roi_out')
+                    if name == 'svr' and not STATE['trained_models'].parameters['svr']['kernel'] == 'linear':
+                        STATE['unavailable_deducabilities'].add('deduce_by_coefs')
                     DeducabilityWindow(model_name=name).open()
 
                 def save_clicked():

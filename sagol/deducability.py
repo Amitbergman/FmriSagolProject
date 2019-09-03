@@ -35,8 +35,9 @@ def zero_indexes_in_data(data, indexes_to_zero):
 def deduce_by_coefs(models, first_index_of_contrast, flattened_vector_index_to_voxel):
     models_importances = {}
     for name, model in models.items():
+        dual_coef = model.dual_coef_[0]
         models_importances[name] = {flattened_vector_index_to_voxel[index]: value for index, value in enumerate(
-            model.coef_[:first_index_of_contrast] if first_index_of_contrast >= 0 else model.coef_[first_index_of_contrast:])}
+            dual_coef[:first_index_of_contrast])}
     return models_importances
 
 
@@ -58,14 +59,15 @@ def plot_brain_image_from_nifty(nifty_path):
 
 
 def from_1d_voxel_to_3d_voxel(voxel_1d, shape_3d):
-    first = voxel_1d // shape_3d[0]
-    second = (voxel_1d % shape_3d[0]) // shape_3d[1]
-    third = ((voxel_1d % shape_3d[0]) % shape_3d[1]) // shape_3d[2]
-    return first, second, third
+    first_res, first_rem = divmod(voxel_1d, shape_3d[2] * shape_3d[1])
+    second_res, second_rem = divmod(first_rem, shape_3d[2])
+    third_res = second_rem
+    return first_res, second_res, third_res
 
 
 def create_brain_nifty_from_weights(weights, shape):
-    weighted_brain = np.zeros(shape=(85,101,65))
-    for voxel, weight in weights:
-        weighted_brain[from_1d_voxel_to_3d_voxel(voxel)] = weight
-    return nib.Nifti1Image(weighted_brain, affine=np.eye(101))
+    weighted_brain = np.zeros(shape=shape)
+    for voxel, weight in weights.items():
+        weighted_brain[from_1d_voxel_to_3d_voxel(voxel, shape)] = weight
+    nifty = nib.Nifti1Image(weighted_brain, affine=np.eye(4))
+    return nifty
