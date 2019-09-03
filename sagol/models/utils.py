@@ -31,6 +31,11 @@ REMARKS = {'cnn': {'filters': LIST_FORMAT_NOT_EMPTY_REMARK,
 
 AVAILABLE_3D_MODELS = set(['cnn'])
 
+DEDUCABILITY_OPTIONS = {'svr': set(['deduce_by_leave_one_roi_out']),
+                        'nusvr': set(['deduce_by_leave_one_roi_out', 'deduce_by_coefs']),
+                        'bagging_regressor': set(['deduce_by_leave_one_roi_out', 'deduce_from_bagging_regressor']),
+                        'lasso': set(['deduce_by_leave_one_roi_out', 'deduce_by_coefs'])}
+
 
 def get_model_params(model_name, model, params_to_get=None):
     params_to_get = params_to_get or AVAILABLE_MODELS[model_name]

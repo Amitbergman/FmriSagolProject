@@ -10,7 +10,7 @@ from sagol.gui.classes import UntrainedModels
 from sagol.gui.utils import load_test_data
 import os
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
-from sagol.gui.deducability_screen import create_deducability_by_leave_on_roi_out_screan
+from sagol.gui.deducability_window import DeducabilityWindow
 
 INVALID_PARAM_MESSAGE = "At least one of the parameters is invalid"
 
@@ -40,6 +40,8 @@ def prepare_data():
 
 class ModelsWindow:
     def __init__(self):
+        #create_data_and_models()
+
         STATE['untrained_models'] = UntrainedModels()
         if not STATE['is_load']:
             prepare_data()
@@ -249,20 +251,23 @@ class ModelsWindow:
                                                     ("Excel Files", "*.xls*"), ("Comma Separated Files", "*.csv"),
                                                     ("All files", "*.*")))
                     if excel_paths is None or excel_paths == '':
-                        return
+                        return False
                     nifty_dir = tk.filedialog.askdirectory(initialdir="/", title="Select test data directory")
                     if nifty_dir is None or nifty_dir == '':
-                        return
+                        return False
                     if load_test_data(excel_paths, nifty_dir, True if self.times_test_data_loaded == 0 else False):
                         self.times_test_data_loaded += 1
                         test_data_loaded_lbl['text'] = 'Test data presents (' + str(self.times_test_data_loaded) + ')'
                     else:
                         tk.messagebox.showinfo("Error", 'There is not even one matching task and contrast between ' +
                                                         'loaded test data and original training data')
+                        return False
+                    return True
 
                 def test_clicked():
                     if self.times_test_data_loaded == 0:
-                        load_test_data_clicked()
+                        if not load_test_data_clicked():
+                            return
                     untrained_model = STATE['untrained_models'].models[name]
                     data = STATE['experiment_data_after_split_3d'] if untrained_model.is_3d else STATE[
                         'experiment_data_after_split']
@@ -271,7 +276,10 @@ class ModelsWindow:
                     draw_res_plot(res_plot, results_frame)
 
                 def open_deducability():
-                    create_deducability_by_leave_on_roi_out_screan('svr')
+                    STATE['unavailable_deducabilities'] = set()
+                    if STATE['is_load']:
+                        STATE['unavailable_deducabilities'].add('deduce_by_leave_one_roi_out')
+                    DeducabilityWindow(model_name=name).open()
 
                 def save_clicked():
                     file_path = tk.filedialog.asksaveasfile(initialdir="/", title="Save model", mode=tk.W)

@@ -6,22 +6,14 @@ from PIL import ImageTk, Image
 from sagol.deducability import deduce_by_leave_one_roi_out, plot_brain_image_from_nifty
 from sagol.evaluate_models import Models
 from sagol.gui.globals import STATE
-import nibabel as nib
-from nilearn import plotting
+
 image_of_brain = None
 import random
 
 
-class roi_to_accuracy_table(tk.Toplevel):
-    def __init__(self, dictionary):
-        tk.Toplevel.__init__(self)
-
-        t = SimpleTable(self, dictionary)
-        t.pack(side="top", fill="x")
-
-
 class SimpleTable(tk.Frame):
     def __init__(self, parent, dictionary):
+
         # use black background so it "peeks through" to
         # form grid lines
         tk.Frame.__init__(self, parent, background="black")
@@ -53,6 +45,8 @@ class SimpleTable(tk.Frame):
             self._widgets.append(current_row)
             index += 1
 
+            self.pack(side="top", fill="x")
+
         for column in range(2):
             self.grid_columnconfigure(column, weight=1)
 
@@ -67,9 +61,8 @@ def show_roi(path_of_roi):
     window = tk.Toplevel()
     window.geometry('1300x700')
     window.title("Relevant ROIS")
+
     path_of_image = 'roi_' + str(random.randint(1, 100200)) + '.jpg'
-
-
     plot_brain_image_from_nifty(path_of_roi, path_of_image)
 
     image_of_brain = ImageTk.PhotoImage(Image.open(path_of_image))
@@ -81,7 +74,7 @@ def show_roi(path_of_roi):
     window.mainloop()
 
 
-def create_deducability_by_leave_on_roi_out_screan(model_name):
+def create_deducability_by_leave_one_roi_out_screan(parent, model_name):
     trained_models = STATE['trained_models']
     relevant_model = trained_models.models[model_name]
     models = Models(ylabels=trained_models.ylabels,
@@ -94,4 +87,4 @@ def create_deducability_by_leave_on_roi_out_screan(model_name):
                     models={model_name: relevant_model},
                     parameters=trained_models.parameters)
     d = deduce_by_leave_one_roi_out(models, STATE['experiment_data_after_split'])
-    roi_to_accuracy_table(d)
+    return SimpleTable(parent, d)
