@@ -40,7 +40,7 @@ def prepare_data():
 
 class ModelsWindow:
     def __init__(self):
-        #create_data_and_models()
+        create_data_and_models()
 
         STATE['untrained_models'] = UntrainedModels()
         if not STATE['is_load']:
@@ -281,7 +281,7 @@ class ModelsWindow:
                         STATE['unavailable_deducabilities'].add('deduce_by_leave_one_roi_out')
                     if name == 'svr' and not STATE['trained_models'].parameters['svr']['kernel'] == 'linear':
                         STATE['unavailable_deducabilities'].add('deduce_by_coefs')
-                    DeducabilityWindow(model_name=name).open()
+                    DeducabilityWindow(model_name=name)
 
                 def save_clicked():
                     file_path = tk.filedialog.asksaveasfile(initialdir="/", title="Save model", mode=tk.W)

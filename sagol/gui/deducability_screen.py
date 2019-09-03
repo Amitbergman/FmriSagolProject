@@ -11,13 +11,16 @@ image_of_brain = None
 import random
 
 
-class SimpleTable(tk.Frame):
-    def __init__(self, parent, dictionary):
-
+class SimpleTable(tk.Toplevel):
+    def __init__(self, dictionary):
         # use black background so it "peeks through" to
         # form grid lines
-        tk.Frame.__init__(self, parent, background="black")
+        tk.Toplevel.__init__(self, background="black")
+        self.title('ROIs importance')
+        self.geometry('700x' + str(30 + 30 * len(dictionary)))
+        self.grab_set()
         self._widgets = []
+
         index = 0
         l = list(dictionary.items())
         l = [('roi', 'accuracy without the roi')] + l
@@ -45,8 +48,6 @@ class SimpleTable(tk.Frame):
             self._widgets.append(current_row)
             index += 1
 
-            self.pack(side="top", fill="x")
-
         for column in range(2):
             self.grid_columnconfigure(column, weight=1)
 
@@ -61,6 +62,7 @@ def show_roi(path_of_roi):
     window = tk.Toplevel()
     window.geometry('1300x700')
     window.title("Relevant ROIS")
+    window.grab_set()
 
     path_of_image = 'roi_' + str(random.randint(1, 1000200)) + '.jpg'
     plot_brain_image_from_nifty_path(path_of_roi, path_of_image)
@@ -71,10 +73,8 @@ def show_roi(path_of_roi):
     label.image = image_of_brain  # need to keep the reference of your image to avoid garbage collection
     label.pack(side="bottom", fill="both", expand="yes")
 
-    window.mainloop()
 
-
-def create_deducability_by_leave_one_roi_out_screan(parent, model_name):
+def create_deducability_by_leave_one_roi_out_screan(model_name):
     trained_models = STATE['trained_models']
     relevant_model = trained_models.models[model_name]
     models = Models(ylabels=trained_models.ylabels,
@@ -87,4 +87,4 @@ def create_deducability_by_leave_one_roi_out_screan(parent, model_name):
                     models={model_name: relevant_model},
                     parameters=trained_models.parameters)
     d = deduce_by_leave_one_roi_out(models, STATE['experiment_data_after_split'])
-    return SimpleTable(parent, d)
+    SimpleTable(d)

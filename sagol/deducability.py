@@ -5,6 +5,7 @@ import numpy as np
 import nibabel as nib
 from nilearn import plotting
 
+
 def deduce_by_leave_one_roi_out(models: Models, flattened_experiment_data: ExperimentDataAfterSplit):
     # will return the score without roi1, without roi2
     map_roi_to_score_without_it = {}
@@ -22,6 +23,7 @@ def deduce_by_leave_one_roi_out(models: Models, flattened_experiment_data: Exper
             map_roi_to_score_without_it[roi_path] = model.score(current_x_test, flattened_experiment_data.y_test)
 
     return map_roi_to_score_without_it
+
 
 def get_indexes_of_roi(roi_path, d):
     return [k for k, v in d.items() if roi_path in v]
@@ -49,23 +51,18 @@ def deduce_from_bagging_regressor(models, first_index_of_contrast, flattened_vec
     for name, model in models.items():
         feature_importances = np.mean([reg.feature_importances_ for reg in model.estimators_], axis=0)
         models_importances[name] = {flattened_vector_index_to_voxel[index]: value for index, value in enumerate(
-            feature_importances[:first_index_of_contrast] if first_index_of_contrast >= 0 else model.coef_[first_index_of_contrast:])}
+            feature_importances[:first_index_of_contrast])}
     return models_importances
 
 
 def plot_brain_image_from_nifty_path(nifty_path, path_to_save):
     data = nib.load(nifty_path)
+    plot_brain_image_from_nifty(data, path_to_save)
 
-    display = plotting.plot_roi(data,
-                      title="plot_roi")
-    display.savefig(path_to_save)
 
 def plot_brain_image_from_nifty(nifty, path_to_save):
-
-    display = plotting.plot_roi(nifty,
-                      title="plot_roi")
+    display = plotting.plot_roi(nifty, title="plot_roi")
     display.savefig(path_to_save)
-
 
 
 def from_1d_voxel_to_3d_voxel(voxel_1d, shape_3d):
