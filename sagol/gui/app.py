@@ -7,7 +7,7 @@ from sagol.utils import setup_log_handlers
 
 setup_log_handlers()
 
-root = tk.Tk()
+root = tk.Toplevel()
 root.title("Sagol")
 
 

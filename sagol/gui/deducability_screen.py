@@ -4,10 +4,10 @@ from sagol.gui.globals import STATE
 from sagol.evaluate_models import Models
 from PIL import ImageTk, Image
 
-
-class roi_to_accuracy_table(tk.Tk):
+image_of_brain = None
+class roi_to_accuracy_table(tk.Toplevel):
     def __init__(self, dictionary):
-        tk.Tk.__init__(self)
+        tk.Toplevel.__init__(self)
 
         t = SimpleTable(self, dictionary)
         t.pack(side="top", fill="x")
@@ -53,16 +53,28 @@ class SimpleTable(tk.Frame):
         widget.configure(text=value)
 
 def show_roi(path_of_roi, frame):
+    import nibabel as nib
+    from nilearn import plotting
+    global image_of_brain
+    window = tk.Toplevel()
+    window.geometry('1300x700')
+    window.title("Models")
 
     path_of_image = 'name123.jpg'
+    data = nib.load(path_of_roi)
+
+    display = plotting.plot_roi(data,
+                                title="plot_roi")
+    display.savefig(path_of_image)
     plot_brain_image_from_nifty(path_of_roi, path_of_image)
 
-    img = ImageTk.PhotoImage(Image.open(path_of_image))
+    image_of_brain = ImageTk.PhotoImage(Image.open(path_of_image))
 
-    panel = tk.Label(frame, image=img)
+    label = tk.Label(window, image=image_of_brain)
+    label.image = image_of_brain  # need to keep the reference of your image to avoid garbage collection
+    label.pack(side="bottom", fill="both", expand="yes")
 
-    panel.pack(side="bottom", fill="both", expand="yes")
-
+    window.mainloop()
 
 def create_deducability_by_leave_on_roi_out_screan(model_name):
     trained_models = STATE['trained_models']
