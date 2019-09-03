@@ -7,6 +7,7 @@ from sagol.gui.globals import STATE
 from sagol.gui.models_window import ModelsWindow
 from sagol.load_data import create_subject_experiment_data
 from sagol.rois import get_available_rois
+from sagol.run_models import generate_ylabel_weights
 
 
 def load_initial_window(parent):
@@ -167,7 +168,7 @@ def display_weights_selector(parent, ylabels):
         ylabel_entry.grid(row=i + 4, column=4)
         # Default to all equal weights.
         ylabel_entry.insert(tk.END, str(1 / len(ylabels)))
-        ylabel_entries.append(ylabel_entry)
+        ylabel_entries.append((ylabel, ylabel_entry))
 
     set_ylabel_weights = tk.Button(parent,
                                    text="Set ylabel weights",
@@ -182,6 +183,10 @@ def on_weights_selector_click(ylabel_entries):
                                      roi_paths=STATE['roi_paths'],
                                      shape=STATE['experiment_data'].shape)
     STATE['tasks_and_contrasts'] = STATE['experiment_data'].tasks_metadata
-    STATE['weights'] = [float(ylabel_entry.get()) for ylabel_entry in ylabel_entries]
+
+    ylabels = [ylabel_entry[0] for ylabel_entry in ylabel_entries]
+    ylabel_to_weight = {ylabel_entry[0]: float(ylabel_entry[1].get()) for ylabel_entry in ylabel_entries}
+
+    STATE['weights'] = generate_ylabel_weights(ylabels, ylabel_to_weight)
     model_window = ModelsWindow()
     model_window.open_models_window()
