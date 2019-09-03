@@ -15,7 +15,8 @@ from sagol.models.nusvr import train_nusvr
 from sagol.models.svr import train_svr
 from sagol.models.cnn_3d import train_cnn_3d, DEFAULT_BATCH_SIZE
 from sagol.models.utils import AVAILABLE_MODELS, AVAILABLE_3D_MODELS
-from sagol.pre_processing import generate_subjects_ylabel, one_hot_encode_contrasts, get_one_hot_from_index
+from sagol.pre_processing import generate_subjects_ylabel, one_hot_encode_contrasts, get_one_hot_from_index, \
+    generate_ylabel_weights
 from sagol.rois import apply_roi_masks
 
 logger = logbook.Logger(__name__)
@@ -261,19 +262,6 @@ def generate_experiment_data_after_split(experiment_data: ExperimentData, tasks_
     )
 
     return experiment_data_after_split, experiment_data_after_split_3d, reverse_contrast_mapping
-
-
-def generate_ylabel_weights(ylabels: List[str], ylabel_to_weight: Optional[dict]) -> List[float]:
-    weights = []
-    if ylabel_to_weight:
-        assert len(ylabel_to_weight) == len(ylabels), 'Weights must be provided for all ylabels.'
-        sum_of_weights = sum(ylabel_to_weight.values())
-        if sum_of_weights != 1:
-            logger.info('Weights were not normalized, normalizing the weights such that the sum is 1.')
-            ylabel_to_weight = {k: v / sum_of_weights for k, v in ylabel_to_weight.items()}
-
-        weights = [ylabel_to_weight[ylabel] for ylabel in ylabels]
-    return weights
 
 
 def train_model(x_train: np.ndarray, y_train: np.ndarray, model_name: str, **kwargs):

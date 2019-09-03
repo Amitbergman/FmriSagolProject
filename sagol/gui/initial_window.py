@@ -7,7 +7,7 @@ from sagol.gui.globals import STATE
 from sagol.gui.models_window import ModelsWindow
 from sagol.load_data import create_subject_experiment_data
 from sagol.rois import get_available_rois
-from sagol.run_models import generate_ylabel_weights
+from sagol.pre_processing import generate_ylabel_weights
 
 
 def load_initial_window(parent):
