@@ -161,8 +161,10 @@ def display_weights_selector(parent, ylabels):
 
     i = 0
     for i, ylabel in enumerate(ylabels):
+        ylabel_text = tk.Label(parent, text=f'{ylabel}: ')
+        ylabel_text.grid(row=i + 9, column=0)
         ylabel_entry = tk.Entry(parent, width=10, validate='focus')
-        ylabel_entry.grid(row=i + 9, column=0)
+        ylabel_entry.grid(row=i + 9, column=1)
         # Default to all equal weights.
         ylabel_entry.insert(tk.END, str(1 / len(ylabels)))
         ylabel_entries.append(ylabel_entry)
