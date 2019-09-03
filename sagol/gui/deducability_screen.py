@@ -53,14 +53,16 @@ class SimpleTable(tk.Frame):
         widget.configure(text=value)
 
 def show_roi(path_of_roi, frame):
+
     path_of_image = 'name123.jpg'
     plot_brain_image_from_nifty(path_of_roi, path_of_image)
 
+    img = ImageTk.PhotoImage(Image.open(path_of_image))
 
-    frame.roi_displayed_image = ImageTk.PhotoImage(Image.open(path_of_image))
-    canvas = tk.Canvas(frame, width=300, height=300)
-    canvas.grid(row=7, column=2)
-    canvas.create_image(20, 20, anchor=tk.NW, image=frame.roi_displayed_image)
+    panel = tk.Label(frame, image=img)
+
+    panel.pack(side="bottom", fill="both", expand="yes")
+
 
 def create_deducability_by_leave_on_roi_out_screan(model_name):
     trained_models = STATE['trained_models']
