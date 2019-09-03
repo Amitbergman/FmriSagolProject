@@ -18,7 +18,7 @@ def load_initial_window(parent):
 
     root_dir_button = tk.Button(parent,
                                 text="Choose root direcotry",
-                                color='blue',
+                                fg='blue',
                                 command=lambda: on_root_button_click(parent))
     root_dir_button.grid(row=0, column=1)
 
@@ -94,8 +94,8 @@ def open_load_models_selector():
     STATE['trained_models'] = models
     STATE['ylabels'] = models.ylabels
     STATE['roi_paths'] = models.roi_paths
-    del STATE['tasks_and_contrasts']
-    del STATE['experiment_data']
+    STATE.pop('tasks_and_contrasts', None)
+    STATE.pop('experiment_data', None)
     STATE['weights'] = [1 / len(STATE['ylabels']) for _ in range(len(STATE['ylabels']))]
     STATE['is_load'] = True
 

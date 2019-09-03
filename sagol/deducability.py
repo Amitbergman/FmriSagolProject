@@ -32,21 +32,22 @@ def zero_indexes_in_data(data, indexes_to_zero):
     return res
 
 
-def deduce_by_coefs(models: Models, first_index_of_contrast):
+def deduce_by_coefs(models, first_index_of_contrast, flattened_vector_index_to_voxel):
     models_importances = {}
-    for name, model in models.models.items():
-        models_importances[name] = {models.flattened_vector_index_to_voxel[index]: value
-                                    for index, value in enumerate(model.coef_[:first_index_of_contrast])}
+    for name, model in models.items():
+        models_importances[name] = {flattened_vector_index_to_voxel[index]: value for index, value in enumerate(
+            model.coef_[:first_index_of_contrast] if first_index_of_contrast >= 0 else model.coef_[first_index_of_contrast:])}
     return models_importances
 
 
-def deduce_from_bagging_regressor(models: Models, first_index_of_contrast):
+def deduce_from_bagging_regressor(models, first_index_of_contrast, flattened_vector_index_to_voxel):
     models_importances = {}
-    for name, model in models.models.items():
+    for name, model in models.items():
         feature_importances = np.mean([reg.feature_importances_ for reg in model.estimators_], axis=0)
-        models_importances[name] = {models.flattened_vector_index_to_voxel[index]: value
-                                    for index, value in enumerate(feature_importances[:first_index_of_contrast])}
+        models_importances[name] = {flattened_vector_index_to_voxel[index]: value for index, value in enumerate(
+            feature_importances[:first_index_of_contrast] if first_index_of_contrast >= 0 else model.coef_[first_index_of_contrast:])}
     return models_importances
+
 
 def plot_brain_image_from_nifty(nifty_path):
     data = nib.load(nifty_path)
@@ -54,3 +55,17 @@ def plot_brain_image_from_nifty(nifty_path):
     plotting.plot_roi(data,
                       title="plot_roi")
     plotting.show()
+
+
+def from_1d_voxel_to_3d_voxel(voxel_1d, shape_3d):
+    first = voxel_1d // shape_3d[0]
+    second = (voxel_1d % shape_3d[0]) // shape_3d[1]
+    third = ((voxel_1d % shape_3d[0]) % shape_3d[1]) // shape_3d[2]
+    return first, second, third
+
+
+def create_brain_nifty_from_weights(weights, shape):
+    weighted_brain = np.zeros(shape=(85,101,65))
+    for voxel, weight in weights:
+        weighted_brain[from_1d_voxel_to_3d_voxel(voxel)] = weight
+    return nib.Nifti1Image(weighted_brain, affine=np.eye(101))

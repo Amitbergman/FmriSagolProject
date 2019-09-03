@@ -7,9 +7,10 @@ def load_test_data(excel_paths, nifty_dir, combine_train_and_test=True):
     test_experiment_data = create_subject_experiment_data(excel_paths, [nifty_dir])
     trained_models = STATE['trained_models']
     contrast_mapping = {name: ind for ind, name in trained_models.reverse_contrast_mapping.items()}
+    tasks_and_contrasts = STATE['tasks_and_contrasts'] if 'tasks_and_contrasts' in STATE else None
     experiment_data_roi_masked, X, y, X_3d, y_3d, _ = apply_roi_masks_and_generate_samples_for_model(
         experiment_data=test_experiment_data, roi_paths=trained_models.roi_paths, contrast_mapping=contrast_mapping,
-        tasks_and_contrasts=STATE['tasks_and_contrasts'], ylabels=trained_models.ylabels, weights=STATE['weights'])
+        tasks_and_contrasts=tasks_and_contrasts, ylabels=trained_models.ylabels, weights=STATE['weights'])
     if len(X) == 0:
         return False
     if 'experiment_data' not in STATE:
