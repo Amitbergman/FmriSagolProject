@@ -21,7 +21,7 @@ def load_initial_window(parent):
                                 text="Choose root direcotry",
                                 fg='blue',
                                 command=lambda: on_root_button_click(parent))
-    root_dir_button.grid(row=0, column=1)
+    root_dir_button.grid(row=1, column=0)
 
     load_models_button = tk.Button(parent,
                                    text="Load models",
@@ -72,7 +72,7 @@ def open_excel_selector(parent):
     STATE['excel_paths'] = excel_paths
 
     excel_paths_label = tk.Label(parent, text='\n'.join(excel_paths))
-    excel_paths_label.grid(row=1, column=0)
+    excel_paths_label.grid(row=0, column=1)
 
 
 def open_root_dir_selector(parent):

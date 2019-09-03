@@ -9,7 +9,7 @@ setup_log_handlers()
 
 root = tk.Tk()
 root.title("Sagol")
-
+root.geometry('1300x700')
 
 background_image = ImageTk.PhotoImage(Image.open('./brain_background.png'))
 background_label = tk.Label(root, image=background_image)
