@@ -6,7 +6,6 @@ from sklearn.preprocessing import OneHotEncoder, MinMaxScaler, StandardScaler
 
 from sagol import config
 from sagol.load_data import FlattenedExperimentData, ExperimentData
-from sagol.run_models import logger
 
 logger = logbook.Logger(__name__)
 
