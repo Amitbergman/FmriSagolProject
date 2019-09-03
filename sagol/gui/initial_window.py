@@ -1,6 +1,6 @@
 import os
 import tkinter as tk
-from tkinter import filedialog
+from tkinter import filedialog, ttk
 
 from sagol.evaluate_models import Models
 from sagol.gui.globals import STATE
@@ -149,13 +149,37 @@ def display_ylabel_selector(parent):
 def on_choose_ylabel_click(parent, ylabels_selector):
     selected_ylabels = [ylabels_selector.get(idx) for idx in ylabels_selector.curselection()]
     STATE['ylabels'] = selected_ylabels
-    # STATE['flattened_experiment_data'] = apply_roi_masks(STATE['experiment_data'], STATE['roi_paths'])
+
+    display_weights_selector(parent, selected_ylabels)
+
+
+def display_weights_selector(parent, ylabels):
+    weights_selector = ttk.Frame(parent)
+    weights_selector.grid(row=8, column=0)
+
+    ylabel_entries = []
+
+    i = 0
+    for i, ylabel in enumerate(ylabels):
+        ylabel_entry = tk.Entry(parent, width=10, validate='focus')
+        ylabel_entry.grid(row=i + 9, column=0)
+        # Default to all equal weights.
+        ylabel_entry.insert(tk.END, str(1 / len(ylabels)))
+        ylabel_entries.append(ylabel_entry)
+
+    set_ylabel_weights = tk.Button(parent,
+                                   text="Set ylabel weights",
+                                   fg="green",
+                                   command=lambda: on_weights_selector_click(ylabel_entries))
+    set_ylabel_weights.grid(row=i + 10, column=0)
+
+
+def on_weights_selector_click(ylabel_entries):
     STATE['is_load'] = False
-    x = Models()
     STATE['trained_models'] = Models(ylabels=STATE['ylabels'],
                                      roi_paths=STATE['roi_paths'],
                                      shape=STATE['experiment_data'].shape)
     STATE['tasks_and_contrasts'] = STATE['experiment_data'].tasks_metadata
-    STATE['weights'] = [1 / len(STATE['ylabels']) for _ in range(len(STATE['ylabels']))]
+    STATE['weights'] = [float(ylabel_entry.get()) for ylabel_entry in ylabel_entries]
     model_window = ModelsWindow()
     model_window.open_models_window()
