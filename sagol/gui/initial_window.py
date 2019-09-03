@@ -57,7 +57,7 @@ def on_load_data_click(parent, contrasts_selector, btn_text):
     choose_roi_button = tk.Button(parent,
                                   text="Choose ROIs",
                                   command=lambda: on_choose_roi_click(parent, roi_selector))
-    choose_roi_button.grid(row=5, column=1)
+    choose_roi_button.grid(row=6, column=0)
 
 
 def on_choose_roi_click(parent, roi_selector):
