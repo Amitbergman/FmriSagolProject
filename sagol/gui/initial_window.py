@@ -138,11 +138,11 @@ def display_ylabel_selector(parent):
 
     for ylabel in available_ylabels:
         y_label_selector.insert(tk.END, ylabel)
-    y_label_selector.grid(row=6, column=0)
+    y_label_selector.grid(row=1, column=4)
     choose_roi_button = tk.Button(parent,
                                   text="Choose Y labels",
                                   command=lambda: on_choose_ylabel_click(parent, y_label_selector))
-    choose_roi_button.grid(row=7)
+    choose_roi_button.grid(row=2, column=4)
     return y_label_selector
 
 
@@ -155,16 +155,16 @@ def on_choose_ylabel_click(parent, ylabels_selector):
 
 def display_weights_selector(parent, ylabels):
     weights_selector = ttk.Frame(parent)
-    weights_selector.grid(row=8, column=0)
+    weights_selector.grid(row=3, column=4)
 
     ylabel_entries = []
 
     i = 0
     for i, ylabel in enumerate(ylabels):
         ylabel_text = tk.Label(parent, text=f'{ylabel}: ')
-        ylabel_text.grid(row=i + 9, column=0)
+        ylabel_text.grid(row=i + 4, column=4)
         ylabel_entry = tk.Entry(parent, width=10, validate='focus')
-        ylabel_entry.grid(row=i + 9, column=1)
+        ylabel_entry.grid(row=i + 4, column=4)
         # Default to all equal weights.
         ylabel_entry.insert(tk.END, str(1 / len(ylabels)))
         ylabel_entries.append(ylabel_entry)
@@ -173,7 +173,7 @@ def display_weights_selector(parent, ylabels):
                                    text="Set ylabel weights",
                                    fg="green",
                                    command=lambda: on_weights_selector_click(ylabel_entries))
-    set_ylabel_weights.grid(row=i + 10, column=0)
+    set_ylabel_weights.grid(row=i + 5, column=4)
 
 
 def on_weights_selector_click(ylabel_entries):
