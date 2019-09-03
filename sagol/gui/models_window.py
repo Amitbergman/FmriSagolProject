@@ -10,6 +10,7 @@ from sagol.gui.classes import UntrainedModels
 from sagol.gui.utils import load_test_data
 import os
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+from sagol.gui.deducability_screen import create_deducability_by_leave_on_roi_out_screan
 
 INVALID_PARAM_MESSAGE = "At least one of the parameters is invalid"
 
@@ -270,7 +271,7 @@ class ModelsWindow:
                     draw_res_plot(res_plot, results_frame)
 
                 def open_deducability():
-                    return
+                    create_deducability_by_leave_on_roi_out_screan('svr')
 
                 def save_clicked():
                     file_path = tk.filedialog.asksaveasfile(initialdir="/", title="Save model", mode=tk.W)
