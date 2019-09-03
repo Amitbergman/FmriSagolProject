@@ -12,14 +12,21 @@ from sagol.rois import get_available_rois
 def load_initial_window(parent):
     excels_button = tk.Button(parent,
                               text="Choose excels",
-                              fg="red",
+                              fg="green",
                               command=lambda: open_excel_selector(parent))
     excels_button.grid(row=0, column=0)
 
     root_dir_button = tk.Button(parent,
                                 text="Choose root direcotry",
+                                color='blue',
                                 command=lambda: on_root_button_click(parent))
     root_dir_button.grid(row=0, column=1)
+
+    load_models_button = tk.Button(parent,
+                                   text="Load models",
+                                   fg="black",
+                                   command=lambda: open_load_models_selector())
+    load_models_button.grid(row=0, column=2)
 
 
 def on_root_button_click(parent):
@@ -76,6 +83,26 @@ def open_root_dir_selector(parent):
     root_dir_label.grid(row=1, column=1)
 
 
+def open_load_models_selector():
+    models_paths = filedialog.askopenfilenames(initialdir="/", title="Select models",
+                                               filetypes=(("All files", "*"),))
+
+    models = Models()
+    for model_path in models_paths:
+        models.load_model(model_path)
+
+    STATE['trained_models'] = models
+    STATE['ylabels'] = models.ylabels
+    STATE['roi_paths'] = models.roi_paths
+    del STATE['tasks_and_contrasts']
+    del STATE['experiment_data']
+    STATE['weights'] = [1 / len(STATE['ylabels']) for _ in range(len(STATE['ylabels']))]
+    STATE['is_load'] = True
+
+    model_window = ModelsWindow()
+    model_window.open_models_window()
+
+
 def display_tasks_selector(parent):
     contrast_selector = tk.Listbox(parent, selectmode=tk.MULTIPLE)
     for task in STATE['task_names']:
@@ -129,6 +156,6 @@ def on_choose_ylabel_click(parent, ylabels_selector):
                                      roi_paths=STATE['roi_paths'],
                                      shape=STATE['experiment_data'].shape)
     STATE['tasks_and_contrasts'] = STATE['experiment_data'].tasks_metadata
-    STATE['weights'] = [1 / len(STATE['ylabels']) for i in range(len(STATE['ylabels']))]
+    STATE['weights'] = [1 / len(STATE['ylabels']) for _ in range(len(STATE['ylabels']))]
     model_window = ModelsWindow()
     model_window.open_models_window()
