@@ -24,10 +24,17 @@ def create_data_and_models():
     else:
         STATE['experiment_data'] = create_subject_experiment_data(
             ["C:/Users/Liorzlo/FmriSagolProject/data/questionnaires_byTasks_new.xlsx"],
-            ["C:/Users/Liorzlo/FmriSagolProject/data/Doors_2ndLev"])
-        STATE['trained_models'] = Models(ylabels=['FPES', 'SPIN'], roi_paths=get_available_rois(), shape=(85,101,65))
+            ["C:/Users/Liorzlo/FmriSagolProject/data/Hariri_2ndLev"])
+        #ylabels = ['SPIN', 'BFNE', 'LSAS', 'FPES', 'DPSOS_self', 'DPSOS_other', 'SPSRQ_punishment']
+        ylabels = ['FPES']
+        STATE['trained_models'] = Models(ylabels=ylabels, roi_paths=get_available_rois(), shape=(85,101,65))
     STATE['tasks_and_contrasts'] = None
-    STATE['weights'] = [0.3, 0.7]
+    #weights = [0.923, 0.879, 0.972, 0.836, 0.780, 0.771, 0.671]
+    weights = [1, 1, 1, 1, 1, 1, 1]
+    summ = sum(weights)
+    STATE['weights'] = []
+    for w in weights:
+        STATE['weights'].append(w / summ)
 
 
 def prepare_data():
