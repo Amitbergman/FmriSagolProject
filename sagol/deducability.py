@@ -55,13 +55,16 @@ def deduce_from_bagging_regressor(models, first_index_of_contrast, flattened_vec
     return models_importances
 
 
-def plot_brain_image_from_nifty_path(nifty_path, path_to_save):
+def plot_brain_image_from_nifty_path(nifty_path, path_to_save, plotting_func, title):
     data = nib.load(nifty_path)
-    plot_brain_image_from_nifty(data, path_to_save)
+    plot_brain_image_from_nifty(data, path_to_save, plotting_func, title)
 
 
-def plot_brain_image_from_nifty(nifty, path_to_save):
-    display = plotting.plot_roi(nifty, title="plot_roi")
+def plot_brain_image_from_nifty(nifty, path_to_save, plotting_func, title):
+    if plotting_func == 'plot_roi':
+        display = plotting.plot_roi(nifty, title=title)
+    elif plotting_func == 'plot_glass_brain':
+        display = plotting.plot_glass_brain(nifty)
     display.savefig(path_to_save)
 
 

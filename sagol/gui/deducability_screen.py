@@ -65,7 +65,7 @@ def show_roi(path_of_roi):
     window.grab_set()
 
     path_of_image = 'roi_' + str(random.randint(1, 1000200)) + '.jpg'
-    plot_brain_image_from_nifty_path(path_of_roi, path_of_image)
+    plot_brain_image_from_nifty_path(path_of_roi, path_of_image, plotting_func='plot_roi', title='ROI')
 
     image_of_brain = ImageTk.PhotoImage(Image.open(path_of_image))
 

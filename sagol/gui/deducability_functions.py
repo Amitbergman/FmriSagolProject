@@ -30,7 +30,7 @@ def deduce_by_coefs_or_from_bagging_regressor(model_name, by_coefs):
     window.grab_set()
 
     path_of_image = 'roi_' + str(random.randint(1, 1000200)) + '.jpg'
-    plot_brain_image_from_nifty(brain_nifty, path_of_image)
+    plot_brain_image_from_nifty(brain_nifty, path_of_image, plotting_func='plot_glass_brain', title='')
 
     image_of_brain = ImageTk.PhotoImage(Image.open(path_of_image))
 
@@ -61,24 +61,3 @@ DEDUCABILITY_CREATORS = {'deduce_by_coefs': deduce_by_coefs,
 DEDUCABILITY_NAMES = {'deduce_by_coefs': 'Voxel importance',
                       'deduce_from_bagging_regressor': 'Voxel importance',
                       'deduce_by_leave_one_roi_out': 'ROIs Importance'}
-
-
-def get_frame_with_nifty(parent, nifty):
-    global image_of_brain
-    frame = ttk.Frame(parent)
-
-    path_of_image = 'roi_' + str(random.randint(1, 1000200)) + '.jpg'
-    plot_brain_image_from_nifty(nifty, path_of_image)
-
-    canvas = tk.Canvas(frame, width=300, height=300)
-    canvas.pack()
-    img = ImageTk.PhotoImage(Image.open(path_of_image))
-    canvas.create_image(20, 20, anchor=tk.NW, image=img)
-
-    #image_of_brain = ImageTk.PhotoImage(Image.open(path_of_image))
-
-    #label = tk.Label(frame, image=image_of_brain)
-    #label.image = image_of_brain  # need to keep the reference of your image to avoid garbage collection
-    #label.pack(side="bottom", fill="both", expand="yes")
-
-    return frame
