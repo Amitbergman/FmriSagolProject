@@ -6,6 +6,7 @@ from typing import List, Union, Optional
 import logbook
 import numpy as np
 from tqdm import tqdm
+import nibabel as nib
 
 from sagol import config
 from sagol.load_data import ExperimentData, convert_nifty_to_image_array, FlattenedExperimentData
@@ -97,3 +98,6 @@ def apply_roi_masks(experiment_data: ExperimentData, roi_paths: Optional[List[st
                                    flattened_vector_index_to_rois=flattened_vector_index_to_rois,
                                    shape=experiment_data.shape,
                                    roi_paths=roi_paths)
+
+
+AFFINE = nib.load(get_available_rois()[0]).affine
