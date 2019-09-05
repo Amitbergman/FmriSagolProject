@@ -26,7 +26,6 @@ def load_initial_window(parent):
                                 height=5,
                                 command=lambda: on_root_button_click(parent))
     root_dir_button.grid(row=1, column=0)
-
     load_models_button = tk.Button(parent,
                                    text="Load models",
                                    fg="black",
