@@ -98,15 +98,17 @@ def open_load_models_selector():
                                                filetypes=(("All files", "*"),))
 
     models = Models()
+    additional_params = {}
     for model_path in models_paths:
-        models.load_model(model_path)
+        additional_params = models.load_model(model_path)
 
     STATE['trained_models'] = models
     STATE['ylabels'] = models.ylabels
     STATE['roi_paths'] = models.roi_paths
     STATE.pop('tasks_and_contrasts', None)
     STATE.pop('experiment_data', None)
-    STATE['weights'] = [1 / len(STATE['ylabels']) for _ in range(len(STATE['ylabels']))]
+    STATE['weights'] = additional_params['weights'] or [1 / len(STATE['ylabels']) for _ in range(len(STATE['ylabels']))]
+    STATE['flattened_vector_index_to_voxel'] = additional_params['flattened_vector_index_to_voxel']
     STATE['is_load'] = True
 
     model_window = ModelsWindow()

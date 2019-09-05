@@ -20,7 +20,9 @@ def create_data_and_models():
 
     if STATE['is_load']:
         STATE['trained_models'] = Models()
-        STATE['trained_models'].load_model(model_file_path='C:/Users/Liorzlo/Desktop/cnn')
+        additional_params = STATE['trained_models'].load_model(model_file_path='C:/Users/Liorzlo/Desktop/cnn')
+        STATE['weights'] = additional_params['weights'] or [1 / len(STATE['ylabels']) for _ in range(len(STATE['ylabels']))]
+        STATE['flattened_vector_index_to_voxel'] = additional_params['flattened_vector_index_to_voxel']
     else:
         STATE['experiment_data'] = create_subject_experiment_data(
             ["C:/Users/Liorzlo/FmriSagolProject/data/questionnaires_byTasks_new.xlsx"],
@@ -42,12 +44,13 @@ def prepare_data():
     STATE['experiment_data_after_split'], STATE['experiment_data_after_split_3d'], \
         STATE['trained_models'].reverse_contrast_mapping = generate_experiment_data_after_split(
         experiment_data=STATE['experiment_data'], roi_paths=trained_models.roi_paths,
-        tasks_and_contrasts=STATE['tasks_and_contrasts'], ylabels=trained_models.ylabels, weights=STATE['weights'])
+        tasks_and_contrasts=STATE['tasks_and_contrasts'], ylabels=trained_models.ylabels, weights=STATE['weights'],
+        should_use_rois=not (not trained_models.roi_paths))
 
 
 class ModelsWindow:
     def __init__(self):
-        create_data_and_models()
+        #create_data_and_models()
 
         STATE['untrained_models'] = UntrainedModels()
         if not STATE['is_load']:
@@ -288,13 +291,21 @@ class ModelsWindow:
                         STATE['unavailable_deducabilities'].add('deduce_by_leave_one_roi_out')
                     if name == 'svr' and not STATE['trained_models'].parameters['svr']['kernel'] == 'linear':
                         STATE['unavailable_deducabilities'].add('deduce_by_coefs')
+
+                    if 'experiment_data_after_split' in STATE:
+                        STATE['flattened_vector_index_to_voxel'] = \
+                            STATE['experiment_data_after_split'].flattened_vector_index_to_voxel
                     DeducabilityWindow(model_name=name)
 
                 def save_clicked():
                     file_path = tk.filedialog.asksaveasfile(initialdir="/", title="Save model", mode=tk.W)
                     if file_path is None or file_path == '':
                         return
-                    STATE['trained_models'].save_model(model_name=name, file_path=file_path.name)
+                    flattened_vector_index_to_voxel = STATE['flattened_vector_index_to_voxel'] \
+                        if 'flattened_vector_index_to_voxel' in STATE else STATE['experiment_data_after_split'].flattened_vector_index_to_voxel
+                    STATE['trained_models'].save_model(model_name=name, file_path=file_path.name,
+                                                       additional_save_dict={'weights': STATE['weights'],
+                                                                             'flattened_vector_index_to_voxel': flattened_vector_index_to_voxel})
 
                 load_test_btn = tk.Button(results_frame, text='Load test data', command=load_test_data_clicked)
                 load_test_btn.grid(column=1, row=3)
@@ -341,7 +352,7 @@ class ModelsWindow:
 
             train_frame = ttk.Frame(left_frame)
             train_frame.grid(column=0, row=1)
-            train_btn = tk.Button(train_frame, text='Train', command=lambda: button_clicked(train_btn))
+            train_btn = tk.Button(train_frame, text='Train on all data', command=lambda: button_clicked(train_btn))
             train_btn.bind("<FocusIn>", btn_focus)
             self.button_funcs[name][train_btn['text']] = train_clicked
             train_btn.grid(column=0, row=0, padx=(0, 100))

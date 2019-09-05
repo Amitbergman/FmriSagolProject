@@ -213,7 +213,7 @@ def apply_roi_masks_and_generate_samples_for_model(experiment_data: ExperimentDa
                 for contrast_name, fmri_data in task_data.items():
                     subject_data.tasks_data[task_name][contrast_name] = fmri_data.flatten()
         flattened_experiment_data = FlattenedExperimentData(subjects_data=experiment_data.subjects_data,
-                                                            flattened_vector_index_to_voxel={},
+                                                            flattened_vector_index_to_voxel={i:i for i in range(np.prod(experiment_data.shape))},
                                                             flattened_vector_index_to_rois={},
                                                             shape=experiment_data.shape,
                                                             roi_paths=[])
