@@ -4,6 +4,7 @@ import copy
 import numpy as np
 import nibabel as nib
 from nilearn import plotting
+from sagol.rois import AFFINE
 
 
 def deduce_by_leave_one_roi_out(models: Models, flattened_experiment_data: ExperimentDataAfterSplit):
@@ -64,7 +65,7 @@ def plot_brain_image_from_nifty(nifty, path_to_save, plotting_func, title):
     if plotting_func == 'plot_roi':
         display = plotting.plot_roi(nifty, title=title)
     elif plotting_func == 'plot_glass_brain':
-        display = plotting.plot_glass_brain(nifty)
+        display = plotting.plot_glass_brain(nifty, plot_abs=False,)
     display.savefig(path_to_save)
 
 
@@ -79,5 +80,5 @@ def create_brain_nifty_from_weights(weights, shape):
     weighted_brain = np.zeros(shape=shape)
     for voxel, weight in weights.items():
         weighted_brain[from_1d_voxel_to_3d_voxel(voxel, shape)] = weight
-    nifty = nib.Nifti1Image(weighted_brain, affine=np.eye(4))
+    nifty = nib.Nifti1Image(weighted_brain, affine=AFFINE)
     return nifty

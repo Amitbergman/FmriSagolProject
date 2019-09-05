@@ -23,6 +23,9 @@ def train_nusvr(x_train: np.ndarray, y_train: np.ndarray, **kwargs) -> (NuSVR, d
     if 'kernel' not in kwargs:
         should_grid_search = True
         param_grid['kernel'] = ['rbf', 'linear', 'poly']
+    if 'nu' not in kwargs:
+        should_grid_search = True
+        param_grid['nu'] = [0.001, 0.1, 0.25, 0.5, 1]
 
     if should_grid_search:
         param_grid['degree'] = [2]

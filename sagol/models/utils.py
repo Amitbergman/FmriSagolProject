@@ -1,7 +1,7 @@
 import torch.nn as nn
 
 AVAILABLE_MODELS = {'svr': {'kernel': str, 'C': float, 'gamma': float},
-                    'nusvr': {'kernel': str, 'C': float, 'gamma': float},
+                    'nusvr': {'kernel': str, 'C': float, 'gamma': float, 'nu': float},
                     'bagging_regressor': {'n_estimators': int},
                     'lasso': {'alpha': float}, 
                     'cnn': {'kernel_size': int, 'filters': (list, int), 'max_pool_size': int, 'max_pool_every': int,
@@ -129,7 +129,7 @@ def between_zero_and_one(value):
 
 
 ADDITIONAL_CHECKS = {'svr': {'C': [is_positive], 'gamma': [is_positive]},
-                     'nusvr': {'C': [is_positive], 'gamma': [is_positive]},
+                     'nusvr': {'C': [is_positive], 'gamma': [is_positive], 'nu': [between_zero_and_one]},
                      'bagging_regressor': {'n_estimators': [is_positive]},
                      'cnn': {'kernel_size': [is_positive], 'filters': [is_positive], 'max_pool_size': [is_positive],
                              'max_pool_every': [is_positive], 'batch_norm_every': [is_positive],

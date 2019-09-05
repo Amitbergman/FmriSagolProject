@@ -35,7 +35,7 @@ class Models:
     def available_models(self):
         return list(self.models.keys())
 
-    def save_model(self, model_name: str, file_path: str):
+    def save_model(self, model_name: str, file_path: str, additional_save_dict: dict = {}):
         assert model_name in self.models, f'Could not find model {model_name}. Available models: {self.available_models}'
 
         metadata = {
@@ -45,7 +45,9 @@ class Models:
             'shape': self.shape,
             'reverse_contrast_mapping': self.reverse_contrast_mapping,
             'train_score': self.train_scores[model_name],
-            'parameters': self.parameters[model_name]
+            'parameters': self.parameters[model_name],
+            'flattened_vector_index_to_voxel': additional_save_dict['flattened_vector_index_to_voxel'],
+            'weights': additional_save_dict['weights'] if 'weights' in additional_save_dict else None
         }
         model_with_metadata = {**metadata, **{'model': self.models[model_name]}}
 
@@ -63,6 +65,8 @@ class Models:
         reverse_contrast_mapping = model_with_metadata['reverse_contrast_mapping']
         train_score = model_with_metadata['train_score']
         parameters = model_with_metadata['parameters']
+        flattened_vector_index_to_voxel = model_with_metadata['flattened_vector_index_to_voxel']
+        weights = model_with_metadata['weights']
         assert not self.ylabels or set(ylabels) == set(self.ylabels), 'ylabels of the loaded model do not match.'
         assert not self.roi_paths or set(roi_paths) == set(self.roi_paths), 'ROIs of the loaded model do not match.'
         assert not self.shape or shape == self.shape, 'ylabels of the loaded model do not match.'
@@ -79,6 +83,9 @@ class Models:
         self.reverse_contrast_mapping = reverse_contrast_mapping
         self.train_scores[model_name] = train_score
         self.parameters[model_name] = parameters
+
+        additional_params = {'weights': weights, 'flattened_vector_index_to_voxel': flattened_vector_index_to_voxel}
+        return additional_params
 
     def set_models(self, trained_models):
         self.ylabels = trained_models.ylabels
