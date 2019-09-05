@@ -1,6 +1,6 @@
 import tkinter as tk
-from sagol.deducability import deduce_by_coefs as ded_by_coefs, deduce_from_bagging_regressor as ded_from_bagging_regressor,\
-    create_brain_nifty_from_weights
+from sagol.deducability import deduce_by_coefs as ded_by_coefs, deduce_by_coefs_lasso as ded_by_coefs_lasso,\
+    deduce_from_bagging_regressor as ded_from_bagging_regressor, create_brain_nifty_from_weights
 from sagol.gui.globals import STATE
 from sagol.gui.deducability_screen import create_deducability_by_leave_one_roi_out_screan
 import random
@@ -15,9 +15,14 @@ def deduce_by_coefs_or_from_bagging_regressor(model_name, by_coefs):
     flattened_vector_index_to_voxel = STATE['experiment_data_after_split'].flattened_vector_index_to_voxel \
         if 'experiment_data_after_split' in STATE else STATE['flattened_vector_index_to_voxel']
     if by_coefs:
-        model_importances = ded_by_coefs(models={model_name: trained_models.models[model_name]},
-                                         first_index_of_contrast=-len(trained_models.reverse_contrast_mapping),
-                                         flattened_vector_index_to_voxel=flattened_vector_index_to_voxel)
+        if model_name == 'lasso':
+            model_importances = ded_by_coefs_lasso(models={model_name: trained_models.models[model_name]},
+                                                   first_index_of_contrast=-len(trained_models.reverse_contrast_mapping),
+                                                   flattened_vector_index_to_voxel=flattened_vector_index_to_voxel)
+        else:
+            model_importances = ded_by_coefs(models={model_name: trained_models.models[model_name]},
+                                             first_index_of_contrast=-len(trained_models.reverse_contrast_mapping),
+                                             flattened_vector_index_to_voxel=flattened_vector_index_to_voxel)
     else:
         model_importances = ded_from_bagging_regressor(models={model_name: trained_models.models[model_name]},
                                                        first_index_of_contrast=-len(trained_models.reverse_contrast_mapping),

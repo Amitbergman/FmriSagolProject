@@ -15,7 +15,7 @@ AVAILABLE_OPTIONS = {'svr': {'kernel': {'': '', 'rbf': 'rbf', 'linear': 'linear'
                      'cnn': {'kernel_size': {3: 3, 5: 5, 7: 7, 9: 9},
                              'loss_function': {'mse': nn.MSELoss(), 'l1': nn.L1Loss(), 'smooth l1': nn.SmoothL1Loss()}}}
 
-NOT_VALID_EMPTY_PARAMETERS = {'cnn': set(['filters', 'learning_rate', 'epochs'])}
+NOT_VALID_EMPTY_PARAMETERS = {'cnn': {'filters', 'learning_rate', 'epochs'}}
 
 DEFAULT_PARAMETERS = {'cnn': {'kernel_size': 3, 'max_pool_size': 2, 'max_pool_every': 1, 'batch_norm_every': 1,
                               'hidden_dimensions': [], 'out_dimension': 10, 'hidden_dimensions_of_regressor': [],
@@ -29,13 +29,13 @@ REMARKS = {'cnn': {'filters': LIST_FORMAT_NOT_EMPTY_REMARK,
                    'hidden_dimensions': LIST_FORMAT_DEFAULT_IS_EMPTY_REMARK,
                    'hidden_dimensions_of_regressor': LIST_FORMAT_DEFAULT_IS_EMPTY_REMARK}}
 
-AVAILABLE_3D_MODELS = set(['cnn'])
+AVAILABLE_3D_MODELS = {'cnn'}
 
 
-DEDUCABILITY_OPTIONS = {'svr': set(['deduce_by_leave_one_roi_out', 'deduce_by_coefs']),
-                        'nusvr': set(['deduce_by_leave_one_roi_out', 'deduce_by_coefs']),
-                        'bagging_regressor': set(['deduce_by_leave_one_roi_out', 'deduce_from_bagging_regressor']),
-                        'lasso': set(['deduce_by_leave_one_roi_out', 'deduce_by_coefs'])}
+DEDUCABILITY_OPTIONS = {'svr': {'deduce_by_leave_one_roi_out', 'deduce_by_coefs'},
+                        'nusvr': {'deduce_by_leave_one_roi_out', 'deduce_by_coefs'},
+                        'bagging_regressor': {'deduce_by_leave_one_roi_out', 'deduce_from_bagging_regressor'},
+                        'lasso': {'deduce_by_leave_one_roi_out', 'deduce_by_coefs'}}
 
 
 def get_model_params(model_name, model, params_to_get=None):

@@ -47,6 +47,15 @@ def deduce_by_coefs(models, first_index_of_contrast, flattened_vector_index_to_v
     return models_importances
 
 
+def deduce_by_coefs_lasso(models, first_index_of_contrast, flattened_vector_index_to_voxel):
+    models_importances = {}
+    for name, model in models.items():
+        coef = model.coef_
+        models_importances[name] = {flattened_vector_index_to_voxel[index]: value for index, value in enumerate(
+            coef[:first_index_of_contrast])}
+    return models_importances
+
+
 def deduce_from_bagging_regressor(models, first_index_of_contrast, flattened_vector_index_to_voxel):
     models_importances = {}
     for name, model in models.items():

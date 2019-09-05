@@ -257,7 +257,7 @@ class ModelsWindow:
                     STATE['unavailable_deducabilities'] = set()
                     if STATE['is_load']:
                         STATE['unavailable_deducabilities'].add('deduce_by_leave_one_roi_out')
-                    if name == 'svr' and not STATE['trained_models'].parameters['svr']['kernel'] == 'linear':
+                    if name in {'svr', 'nusvr'} and not STATE['trained_models'].parameters[name]['kernel'] == 'linear':
                         STATE['unavailable_deducabilities'].add('deduce_by_coefs')
 
                     if 'experiment_data_after_split' in STATE:
