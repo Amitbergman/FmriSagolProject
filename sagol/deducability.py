@@ -1,4 +1,4 @@
-from sagol.load_data import FlattenedExperimentData, ExperimentDataAfterSplit
+from sagol.load_data import ExperimentDataAfterSplit
 from sagol.evaluate_models import Models
 import copy
 import numpy as np

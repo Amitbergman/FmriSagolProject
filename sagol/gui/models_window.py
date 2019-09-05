@@ -1,11 +1,8 @@
 import tkinter as tk
 from tkinter import ttk
 from sagol.gui.globals import STATE
-from sagol.load_data import create_subject_experiment_data
 from sagol.run_models import generate_experiment_data_after_split
 from sagol.models.utils import AVAILABLE_MODELS, is_valid_param, get_parameter_remark
-from sagol.evaluate_models import Models
-from sagol.rois import get_available_rois
 from sagol.gui.classes import UntrainedModels
 from sagol.gui.utils import load_test_data
 import os
@@ -13,30 +10,6 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from sagol.gui.deducability_window import DeducabilityWindow
 
 INVALID_PARAM_MESSAGE = "At least one of the parameters is invalid"
-
-
-def create_data_and_models():
-    STATE['is_load'] = False
-
-    if STATE['is_load']:
-        STATE['trained_models'] = Models()
-        additional_params = STATE['trained_models'].load_model(model_file_path='C:/Users/Liorzlo/Desktop/cnn')
-        STATE['weights'] = additional_params['weights'] or [1 / len(STATE['ylabels']) for _ in range(len(STATE['ylabels']))]
-        STATE['flattened_vector_index_to_voxel'] = additional_params['flattened_vector_index_to_voxel']
-    else:
-        STATE['experiment_data'] = create_subject_experiment_data(
-            ["C:/Users/Liorzlo/FmriSagolProject/data/questionnaires_byTasks_new.xlsx"],
-            ["C:/Users/Liorzlo/FmriSagolProject/data/Hariri_2ndLev"])
-        #ylabels = ['SPIN', 'BFNE', 'LSAS', 'FPES', 'DPSOS_self', 'DPSOS_other', 'SPSRQ_punishment']
-        ylabels = ['FPES']
-        STATE['trained_models'] = Models(ylabels=ylabels, roi_paths=get_available_rois(), shape=(85,101,65))
-    STATE['tasks_and_contrasts'] = None
-    #weights = [0.923, 0.879, 0.972, 0.836, 0.780, 0.771, 0.671]
-    weights = [1, 1, 1, 1, 1, 1, 1]
-    summ = sum(weights)
-    STATE['weights'] = []
-    for w in weights:
-        STATE['weights'].append(w / summ)
 
 
 def prepare_data():
@@ -50,8 +23,6 @@ def prepare_data():
 
 class ModelsWindow:
     def __init__(self):
-        #create_data_and_models()
-
         STATE['untrained_models'] = UntrainedModels()
         if not STATE['is_load']:
             prepare_data()
@@ -177,7 +148,6 @@ class ModelsWindow:
             tab_inner_frame = ttk.Frame(tab)
             tab_inner_frame.pack(side=tk.TOP)
             left_frame = ttk.Frame(tab_inner_frame)
-            #left_frame.grid(column=0, row=0, pady=(0, 190))
             left_frame.pack(side=tk.LEFT)
             params_frame = ttk.Frame(left_frame)
             params_frame.grid(column=0, row=0)
@@ -216,7 +186,6 @@ class ModelsWindow:
 
             def button_clicked(button):
                 self.clicked_button = button['text']
-                #params_frame.focus_set()
                 button.focus_set()
 
             def draw_res_plot(res_plot, results_frame):
@@ -230,7 +199,6 @@ class ModelsWindow:
             def create_results_frame():
                 results_frame = ttk.Frame(tab_inner_frame)
                 self.results_frames[name] = results_frame
-                #results_frame.grid(column=1, row=0)
                 results_frame.pack(side=tk.LEFT)
 
                 trained_model_lbl = tk.Label(results_frame, text='Trained model:')

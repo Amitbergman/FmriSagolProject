@@ -42,8 +42,6 @@ def get_mask_from_roi(roi_path: Union[Path, str]) -> np.array:
     roi_path = str(roi_path)
     assert roi_path.endswith('nii')
     nifty = convert_nifty_to_image_array(os.path.join(config.ROIS_DIR, roi_path))
-    # Make ROIs binary.
-    # TODO: ask ofir why there were values that are not binary.
     return np.where(nifty == 0, 0, 1)
 
 

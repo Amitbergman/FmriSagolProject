@@ -1,5 +1,4 @@
 import tkinter as tk
-from tkinter import ttk
 from sagol.models.utils import DEDUCABILITY_OPTIONS
 from sagol.gui.globals import STATE
 from sagol.gui.deducability_functions import DEDUCABILITY_CREATORS, DEDUCABILITY_NAMES

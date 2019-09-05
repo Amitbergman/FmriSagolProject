@@ -13,8 +13,7 @@ import random
 
 class SimpleTable(tk.Toplevel):
     def __init__(self, dictionary):
-        # use black background so it "peeks through" to
-        # form grid lines
+        # use black background so it "peeks through" to form grid lines
         tk.Toplevel.__init__(self, background="black")
         self.title('ROIs importance')
         self.geometry('700x' + str(30 + 30 * len(dictionary)))

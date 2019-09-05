@@ -67,7 +67,6 @@ def generate_samples_for_model(experiment_data: Union[FlattenedExperimentData, E
                         # Add the contrast as the last feature in the data.
                         if is_3d:
                             fmri_data_tensor = torch.from_numpy(fmri_data).type(torch.FloatTensor)
-                            # contrast_tensor = torch.Tensor([contrast_hot_encoding_mapping[task_contrast_name]])
                             X.append([fmri_data_tensor, contrast_hot_encoding_mapping[task_contrast_name]])
                         else:
                             X.append(np.concatenate((fmri_data, [contrast_hot_encoding_mapping[task_contrast_name]])))

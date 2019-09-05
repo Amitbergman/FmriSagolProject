@@ -23,22 +23,12 @@ def deduce_by_coefs_or_from_bagging_regressor(model_name, by_coefs):
                                                        first_index_of_contrast=-len(trained_models.reverse_contrast_mapping),
                                                        flattened_vector_index_to_voxel=flattened_vector_index_to_voxel)
 
-    #summ = 0
-    #for k, v in model_importances[model_name].items():
-    #    summ += np.abs(v)
-    #weights = {voxel: importance / summ for voxel, importance in model_importances[model_name].items()}
-
     brain_nifty = create_brain_nifty_from_weights(weights=model_importances[model_name], shape=trained_models.shape)
 
     window = tk.Toplevel()
     window.geometry('1300x700')
     window.title("Voxel importance")
     window.grab_set()
-
-    #for i in range(trained_models.shape[0]):
-    #    for j in range(trained_models.shape[1]):
-    #        for k in range(trained_models.shape[2]):
-    #            brain_nifty._data[i,j,k] = (i / 85) * (j / 101) * (k / 65) * 5
 
     path_of_image = 'roi_' + str(random.randint(1, 1000200)) + '.jpg'
     plot_brain_image_from_nifty(brain_nifty, path_of_image, plotting_func='plot_glass_brain', title='')
@@ -49,7 +39,12 @@ def deduce_by_coefs_or_from_bagging_regressor(model_name, by_coefs):
     label.image = image_of_brain  # need to keep the reference of your image to avoid garbage collection
     label.pack(side="bottom", fill="both", expand="yes")
 
-    window.mainloop()
+    import os
+    if os.path.exists(path_of_image):
+        os.remove(path_of_image)
+        print("deleted temp file")
+    else:
+        print("Could not delete since the file does not exist")
 
 
 def deduce_by_coefs(model_name):

@@ -15,7 +15,6 @@ logger = logbook.Logger(__name__)
 
 
 # This PyTorch based convolutional network can be used for regression or 0-1 classification
-# Architecture of the network: [(Conv -> ReLU)*P -> MaxPool]*(N/P) -> (Linear -> ReLU)*M -> Linear -> (Linear -> ReLU)*K -> Linear
 class ConvNet(nn.Module):
 
     # in_size: size of input images, e.g. (85, 101, 65)
