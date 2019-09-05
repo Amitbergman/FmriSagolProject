@@ -23,7 +23,7 @@ class SimpleTable(tk.Toplevel):
 
         index = 0
         l = list(dictionary.items())
-        l = [('roi', 'accuracy without the roi')] + l
+        l = [('ROI', 'accuracy without the ROI')] + l
 
         for (key, val) in l:
             if index == 0:
@@ -72,6 +72,13 @@ def show_roi(path_of_roi):
     label = tk.Label(window, image=image_of_brain)
     label.image = image_of_brain  # need to keep the reference of your image to avoid garbage collection
     label.pack(side="bottom", fill="both", expand="yes")
+
+    import os
+    if os.path.exists(path_of_image):
+        os.remove(path_of_image)
+        print("deleted temp file")
+    else:
+        print("Could not delete since the file does not exist")
 
 
 def create_deducability_by_leave_one_roi_out_screan(model_name):
