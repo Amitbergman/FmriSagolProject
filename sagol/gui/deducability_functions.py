@@ -31,7 +31,7 @@ def deduce_by_coefs_or_from_bagging_regressor(model_name, by_coefs):
     brain_nifty = create_brain_nifty_from_weights(weights=model_importances[model_name], shape=trained_models.shape)
 
     window = tk.Toplevel()
-    window.geometry('1300x700')
+    window.geometry('800x400')
     window.title("Voxel importance")
     window.grab_set()
 
@@ -50,10 +50,11 @@ def deduce_by_coefs_or_from_bagging_regressor(model_name, by_coefs):
         print("deleted temp file")
     else:
         print("Could not delete since the file does not exist")
+    return window
 
 
 def deduce_by_coefs(model_name):
-    deduce_by_coefs_or_from_bagging_regressor(model_name, by_coefs=True)
+    return deduce_by_coefs_or_from_bagging_regressor(model_name, by_coefs=True)
 
 
 def deduce_from_bagging_regressor(model_name):
@@ -61,7 +62,7 @@ def deduce_from_bagging_regressor(model_name):
 
 
 def deduce_from_leave_one_roi_out(model_name):
-    create_deducability_by_leave_one_roi_out_screan(model_name)
+    return create_deducability_by_leave_one_roi_out_screan(model_name)
 
 
 DEDUCABILITY_CREATORS = {'deduce_by_coefs': deduce_by_coefs,

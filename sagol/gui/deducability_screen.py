@@ -33,7 +33,7 @@ class SimpleTable(tk.Toplevel):
                 col_1 = val
             current_row = []
 
-            roi_button = tk.Button(self, text=col_0, command=partial(show_roi, key), width=10)
+            roi_button = tk.Button(self, text=col_0, command=partial(self.show_roi, key), width=10)
             if index == 0:
                 roi_button["state"] = "disabled"
 
@@ -54,30 +54,34 @@ class SimpleTable(tk.Toplevel):
         widget = self._widgets[row][column]
         widget.configure(text=value)
 
+    def show_roi(self, path_of_roi):
+        global image_of_brain
+        window = tk.Toplevel()
+        window.geometry('800x400')
+        window.title("Relevant ROIS")
+        window.grab_set()
 
-def show_roi(path_of_roi):
+        path_of_image = 'roi_' + str(random.randint(1, 1000200)) + '.jpg'
+        plot_brain_image_from_nifty_path(path_of_roi, path_of_image, plotting_func='plot_roi', title='ROI')
 
-    global image_of_brain
-    window = tk.Toplevel()
-    window.geometry('1300x700')
-    window.title("Relevant ROIS")
-    window.grab_set()
+        image_of_brain = ImageTk.PhotoImage(Image.open(path_of_image))
 
-    path_of_image = 'roi_' + str(random.randint(1, 1000200)) + '.jpg'
-    plot_brain_image_from_nifty_path(path_of_roi, path_of_image, plotting_func='plot_roi', title='ROI')
+        label = tk.Label(window, image=image_of_brain)
+        label.image = image_of_brain  # need to keep the reference of your image to avoid garbage collection
+        label.pack(side="bottom", fill="both", expand="yes")
 
-    image_of_brain = ImageTk.PhotoImage(Image.open(path_of_image))
+        import os
+        if os.path.exists(path_of_image):
+            os.remove(path_of_image)
+            print("deleted temp file")
+        else:
+            print("Could not delete since the file does not exist")
 
-    label = tk.Label(window, image=image_of_brain)
-    label.image = image_of_brain  # need to keep the reference of your image to avoid garbage collection
-    label.pack(side="bottom", fill="both", expand="yes")
+        def on_closing():
+            window.destroy()
+            self.grab_set()
 
-    import os
-    if os.path.exists(path_of_image):
-        os.remove(path_of_image)
-        print("deleted temp file")
-    else:
-        print("Could not delete since the file does not exist")
+        window.protocol("WM_DELETE_WINDOW", on_closing)
 
 
 def create_deducability_by_leave_one_roi_out_screan(model_name):
@@ -93,4 +97,4 @@ def create_deducability_by_leave_one_roi_out_screan(model_name):
                     models={model_name: relevant_model},
                     parameters=trained_models.parameters)
     d = deduce_by_leave_one_roi_out(models, STATE['experiment_data_after_split'])
-    SimpleTable(d)
+    return SimpleTable(d)
