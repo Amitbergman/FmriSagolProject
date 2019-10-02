@@ -24,3 +24,10 @@ pip install -r requirements.txt
 conda install -y ipykernel jupyter_client
 python -m ipykernel install --user --name sagol
 ```
+
+## Run:
+In CMD:
+```
+conda activate sagol
+python sagol/gui/app.py
+```
