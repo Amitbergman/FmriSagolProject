@@ -11,4 +11,4 @@ attrs==19.1.0
 xlrd==1.2.0
 tqdm==4.34.0
 logbook==1.5.2
-pillow==6.0.0
+pillow==8.2.0
